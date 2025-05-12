@@ -24,6 +24,7 @@ class PinkService : Service() {
 
 
     private var allowRebind: Boolean = false
+    private var serviceRunningCurrently: Boolean = true
 
     private val binder: PinkServiceBinder by lazy {
         PinkServiceBinder()
@@ -63,18 +64,19 @@ class PinkService : Service() {
         Toast.makeText(this, "On Start", Toast.LENGTH_SHORT).show()
 
         Log.d("PinkService", "Outer Threade ${Thread.currentThread().name}")
+        serviceRunningCurrently = true
 
         thread(start = true){
-            while (true) {
+            while (serviceRunningCurrently) {
                 Log.d("PinkService", "Logging Message General Threade ${Thread.currentThread().name}")
                 Thread.sleep(1000)
 
             }
         }
 
-        GlobalScope.launch(Dispatchers.Main) {
+        var job = GlobalScope.launch(Dispatchers.Main) {
 
-            while (true) {
+            while (serviceRunningCurrently) {
                 Log.d("PinkService", "Logging Message Globalscope Coroutine Thread ${Thread.currentThread().name}")
                 delay(1000L)
 
@@ -94,6 +96,7 @@ class PinkService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceRunningCurrently = false
         Log.d("PinkService", "On Destroy Called" )
         Toast.makeText(this, "On Destroy Called", Toast.LENGTH_SHORT).show()
     }
