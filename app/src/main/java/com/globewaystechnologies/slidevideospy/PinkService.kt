@@ -12,6 +12,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Random
 import kotlin.concurrent.thread
 
@@ -56,14 +61,35 @@ class PinkService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("PinkService", "On Start Command" )
         Toast.makeText(this, "On Start", Toast.LENGTH_SHORT).show()
+
+        Log.d("PinkService", "Outer Threade ${Thread.currentThread().name}")
+
         thread(start = true){
             while (true) {
-                Log.d("PinkService", "Logging Message")
+                Log.d("PinkService", "Logging Message General Threade ${Thread.currentThread().name}")
                 Thread.sleep(1000)
+
             }
         }
+
+        GlobalScope.launch(Dispatchers.Main) {
+
+            while (true) {
+                Log.d("PinkService", "Logging Message Globalscope Coroutine Thread ${Thread.currentThread().name}")
+                delay(1000L)
+
+                withContext(Dispatchers.Main){
+                    Log.d("PinkService", "Logging Message Globalscope Coroutine Thread--2-- ${Thread.currentThread().name}")
+                }
+
+            }
+
+        }
+
         startLoggerForegroundServices()
+
         return super.onStartCommand(intent, flags, startId)
+
     }
 
     override fun onDestroy() {

@@ -59,4 +59,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:x.x.x")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:x.x.x")
+
 }
