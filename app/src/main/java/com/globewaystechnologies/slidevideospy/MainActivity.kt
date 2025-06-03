@@ -116,6 +116,8 @@ class MainActivity : ComponentActivity() {
 
                         CameraFirstView()
 
+                        CameraSecondView()
+
                     }
                 }
             }
@@ -185,3 +187,29 @@ fun CameraFirstView() {
 
 
 
+@Composable
+fun CameraSecondView() {
+    var context = LocalContext.current
+    var lifecycleOwner = LocalLifecycleOwner.current
+    var cameraController2 = remember { LifecycleCameraController(context) }
+    val camWidth = 100.dp
+    val camHeight = 140.dp
+    AndroidView(
+        modifier = Modifier
+            .width(camWidth)
+            .height(camHeight)
+            .border(1.dp, Color.Gray),
+        factory = { context ->
+            PreviewView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT,MATCH_PARENT)
+//                setBackgroundColor(Color.Black)
+                scaleType = PreviewView.ScaleType.FIT_START
+            }.also { previewView ->
+                previewView.controller = cameraController2
+                cameraController2.bindToLifecycle(lifecycleOwner)
+            }
+        }
+    )
+
+
+}
