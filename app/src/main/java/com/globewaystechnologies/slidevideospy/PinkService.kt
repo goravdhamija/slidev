@@ -14,8 +14,10 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -30,6 +32,8 @@ class PinkService : Service() {
 
     private var allowRebind: Boolean = false
     private var serviceRunningCurrently: Boolean = true
+
+
 
     private val binder: PinkServiceBinder by lazy {
         PinkServiceBinder()
@@ -148,15 +152,15 @@ class PinkService : Service() {
             }
         )
 
-        startForeground(
-            111,
-            notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-            } else {
-                0
-            }
-        )
+//        startForeground(
+//            111,
+//            notification,
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
+//            } else {
+//                0
+//            }
+//        )
         startForeground(
             111,
             notification,
