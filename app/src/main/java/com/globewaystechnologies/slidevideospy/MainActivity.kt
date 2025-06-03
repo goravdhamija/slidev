@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS,  Manifest.permission.FOREGROUND_SERVICE_CAMERA, Manifest.permission.CAMERA),200)
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS,  Manifest.permission.FOREGROUND_SERVICE_CAMERA, Manifest.permission.CAMERA, Manifest.permission.FOREGROUND_SERVICE_MICROPHONE, Manifest.permission.RECORD_AUDIO, Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION),200)
 
 
     }
