@@ -114,7 +114,7 @@ class MainActivity : ComponentActivity() {
                         }
 
 
-//                        CameraFirstView()
+                        CameraFirstView()
 
                     }
                 }
@@ -161,8 +161,8 @@ fun CameraFirstView() {
     var context = LocalContext.current
     var lifecycleOwner = LocalLifecycleOwner.current
     var cameraController = remember { LifecycleCameraController(context) }
-    val camWidth = 200.dp
-    val camHeight = 300.dp
+    val camWidth = 100.dp
+    val camHeight = 140.dp
     AndroidView(
         modifier = Modifier
             .width(camWidth)
