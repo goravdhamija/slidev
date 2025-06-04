@@ -7,8 +7,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraDevice
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -27,13 +31,23 @@ import kotlinx.coroutines.withContext
 import java.util.Random
 import kotlin.concurrent.thread
 
+import android.hardware.camera2.CameraManager
+import android.os.Handler
+import android.os.HandlerThread
+import android.view.TextureView
+import androidx.annotation.RequiresPermission
+
 class PinkService : Service() {
 
 
     private var allowRebind: Boolean = false
     private var serviceRunningCurrently: Boolean = true
+    private lateinit var cameraManager: CameraManager
+    private lateinit var backgroundHandlerThread: HandlerThread
+    private lateinit var backgroundHandler: Handler
 
-
+    private lateinit var backgroundHandlerThread2: HandlerThread
+    private lateinit var backgroundHandler2: Handler
 
     private val binder: PinkServiceBinder by lazy {
         PinkServiceBinder()
@@ -68,6 +82,7 @@ class PinkService : Service() {
         Toast.makeText(this, "On Create Called", Toast.LENGTH_SHORT).show()
     }
 
+    @RequiresPermission(Manifest.permission.CAMERA)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("PinkService", "On Start Command" )
         Toast.makeText(this, "On Start", Toast.LENGTH_SHORT).show()
@@ -111,6 +126,7 @@ class PinkService : Service() {
     }
 
 
+    @RequiresPermission(Manifest.permission.CAMERA)
     fun startLoggerForegroundServices(){
         createNotificationChannel()
         val notification = createNotification()
@@ -170,6 +186,15 @@ class PinkService : Service() {
                 0
             }
         )
+
+
+
+        cameraServicesPoint()
+
+
+
+
+
     }
 
     fun getPendingIntent(): PendingIntent{
@@ -200,5 +225,128 @@ class PinkService : Service() {
     inner class PinkServiceBinder: Binder() {
         fun getService(): PinkService = this@PinkService
     }
+
+
+
+    @RequiresPermission(Manifest.permission.CAMERA)
+    fun cameraServicesPoint(){
+        cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
+        val cameraIdList = cameraManager.cameraIdList
+
+        for (cameraItem in cameraIdList) {
+            var charactersticsCamera = cameraManager.getCameraCharacteristics(cameraItem)
+
+            Log.d(
+                "PinkServiceCamera",
+                "Camera Facing. :${charactersticsCamera.get(CameraCharacteristics.LENS_FACING)}"
+            )
+        }
+
+        startBackgroundThread("dipdip")
+        cameraManager.openCamera(cameraIdList[0], cameraStateCallback,backgroundHandler)
+
+
+        startBackgroundThread2("triptrip")
+        cameraManager.openCamera(cameraIdList[1], cameraStateCallback2,backgroundHandler2)
+
+
+    }
+
+
+
+     val cameraStateCallback = object : CameraDevice.StateCallback() {
+        override fun onOpened(camera: CameraDevice) {
+            Log.d("PinkServiceCamera", "Camera Opened 1")
+
+        }
+
+        override fun onDisconnected(cameraDevice: CameraDevice) {
+            Log.d("PinkServiceCamera", "Camera Disconnected 1")
+        }
+
+        override fun onError(cameraDevice: CameraDevice, error: Int) {
+            val errorMsg = when(error) {
+                ERROR_CAMERA_DEVICE -> "Fatal (device)"
+                ERROR_CAMERA_DISABLED -> "Device policy"
+                ERROR_CAMERA_IN_USE -> "Camera in use"
+                ERROR_CAMERA_SERVICE -> "Fatal (service)"
+                ERROR_MAX_CAMERAS_IN_USE -> "Maximum cameras in use"
+                else -> "Unknown"
+            }
+            Log.e("PinkServiceCamera", "Error when trying to connect camera $errorMsg")
+        }
+    }
+
+
+     val cameraStateCallback2 = object : CameraDevice.StateCallback() {
+        override fun onOpened(camera: CameraDevice) {
+            Log.d("PinkServiceCamera", "Camera Opened 2")
+        }
+
+        override fun onDisconnected(cameraDevice: CameraDevice) {
+            Log.d("PinkServiceCamera", "Camera Disconnected 2")
+        }
+
+        override fun onError(cameraDevice: CameraDevice, error: Int) {
+            val errorMsg = when(error) {
+                ERROR_CAMERA_DEVICE -> "Fatal (device)"
+                ERROR_CAMERA_DISABLED -> "Device policy"
+                ERROR_CAMERA_IN_USE -> "Camera in use"
+                ERROR_CAMERA_SERVICE -> "Fatal (service)"
+                ERROR_MAX_CAMERAS_IN_USE -> "Maximum cameras in use"
+                else -> "Unknown"
+            }
+            Log.e("PinkServiceCamera", "Error when trying to connect camera $errorMsg")
+        }
+    }
+
+
+     fun startBackgroundThread(threadName:String) {
+        backgroundHandlerThread = HandlerThread(threadName)
+        backgroundHandlerThread.start()
+        backgroundHandler = Handler(
+            backgroundHandlerThread.looper)
+    }
+
+     fun stopBackgroundThread() {
+        backgroundHandlerThread.quitSafely()
+        backgroundHandlerThread.join()
+    }
+
+
+    fun startBackgroundThread2(threadName:String) {
+        backgroundHandlerThread2 = HandlerThread(threadName)
+        backgroundHandlerThread2.start()
+        backgroundHandler2 = Handler(
+            backgroundHandlerThread2.looper)
+    }
+
+    fun stopBackgroundThread2() {
+        backgroundHandlerThread2.quitSafely()
+        backgroundHandlerThread2.join()
+    }
+
+
+     val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+        override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
+            Log.d("PinkServiceCamera", "SurfaceTexture available")
+
+        }
+        override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
+            Log.d("PinkServiceCamera", "SurfaceTexture size changed")
+        }
+
+         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+             Log.d("PinkServiceCamera", "SurfaceTexture destroyed")
+             TODO("Not yet implemented")
+         }
+
+        override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
+            Log.d("PinkServiceCamera", "SurfaceTexture updated")
+
+        }
+    }
+
+
 
 }

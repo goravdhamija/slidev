@@ -5,6 +5,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.graphics.ImageFormat
+import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraDevice
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -40,6 +44,17 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.globewaystechnologies.slidevideospy.ui.theme.SlideVideoSPYTheme
+import android.hardware.camera2.CameraManager
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Surface
+import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
+import android.os.Handler
+import android.os.HandlerThread
+import android.hardware.camera2.CameraAccessException
+import androidx.core.content.ContextCompat.getSystemService
 
 
 class MainActivity : ComponentActivity() {
@@ -89,18 +104,49 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         val serviceIntent = Intent(this, PinkService::class.java)
-
         super.onCreate(savedInstanceState)
+
+        var cameraManager: CameraManager
+        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val cameraIdList = cameraManager.cameraIdList
+        val cameraThread = HandlerThread("CameraThread").apply { start() }
+        val cameraHandler = Handler(cameraThread.looper)
+        val firstCamera = cameraIdList[0]
+
+        cameraManager.getCameraCharacteristics(firstCamera)
+
+       // cameraManager.openCamera(firstCamera)
+
+//        cameraManager.openCamera(firstCamera, object : CameraDevice.StateCallback() {
+//            override fun onOpened(camera: CameraDevice) {
+////                cameraDevice = camera
+////                createCameraPreviewSession()
+//            }
+//
+//            override fun onDisconnected(camera: CameraDevice) {
+//                camera.close()
+//            }
+//
+//            override fun onError(camera: CameraDevice, error: Int) {
+//                camera.close()
+//            }
+//        }, null)
+
+
 
         enableEdgeToEdge()
         setContent {
 
             SlideVideoSPYTheme {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 20.dp, top = 60.dp, end = 20.dp, bottom = 20.dp),
+                    contentAlignment = Alignment.TopStart
                 ) {
-                    Column {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
                         FilledButtonStartForground {
 
                             startForegroundService(serviceIntent)
@@ -113,10 +159,57 @@ class MainActivity : ComponentActivity() {
 
                         }
 
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(20.dp)
+                        ) {
 
-                        CameraFirstView()
+                            items(cameraIdList) { item ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                                            modifier = Modifier
+                                            .size(width = 150.dp, height = 700.dp)
+                                    .border(1.dp, Color.Magenta)
+                                ) {
+                                    Text(
+                                        text = "Camera No. :$item ",
 
-                        CameraSecondView()
+                                    )
+                                    Surface(
+                                        modifier = Modifier
+                                            .size(width = 145.dp, height = 200.dp)
+                                            .border(1.dp, Color.Cyan)
+                                    ) {
+
+                                    }
+
+                                        var charactersticsCamera = cameraManager.getCameraCharacteristics(item)
+                                    var previewSize = charactersticsCamera.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!.getOutputSizes(ImageFormat.JPEG).maxByOrNull { it.height * it.width }!!
+
+
+                                    Text(
+                                        text = "Camera Facing. :${charactersticsCamera.get(CameraCharacteristics.LENS_FACING)} "
+                                        )
+                                    Text(
+                                        text = "Camera FlashInfo. :${charactersticsCamera.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)} "
+                                    )
+                                    Text(
+                                        text = "Camera Facing Front. :${CameraCharacteristics.LENS_FACING_FRONT} "
+                                    )
+                                    Text(
+                                        text = "Camera Preview Size. : WIDTH- ${previewSize.width} by HEIGHT- ${ previewSize.height} "
+                                    )
+
+
+                                }
+                            }
+                        }
+
+                        CameraDashView(LocalContext.current)
+
+                      //  CameraFirstView()
+
+                      //  CameraSecondView()
 
                     }
                 }
@@ -143,7 +236,7 @@ fun FilledButtonStartForground(onClick: () -> Unit) {
     var context = LocalContext.current
 
     Button(onClick = { onClick() }) {
-        Text("Start Foreground")
+        Text("Start Foreground Services With Notification")
     }
 }
 
@@ -154,7 +247,7 @@ fun FilledButtonStopForground(onClick: () -> Unit) {
         colors = ButtonDefaults.buttonColors(containerColor = Color.Red,
             contentColor = Color.Black)
     ) {
-        Text("Stop Foreground")
+        Text("Stop Foreground Services With Notification Removal")
     }
 }
 
@@ -181,7 +274,6 @@ fun CameraFirstView() {
             }
         }
     )
-
 
 }
 
@@ -211,5 +303,48 @@ fun CameraSecondView() {
         }
     )
 
+}
+
+
+@Composable
+fun CameraDashView(context: Context) {
+    var cameraManager: CameraManager
+    cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+    val cameraIdList = cameraManager.cameraIdList
+    val cameraThread = HandlerThread("CameraThread").apply { start() }
+    val cameraHandler = Handler(cameraThread.looper)
+    val firstCamera = cameraIdList[0]
+
+    var ch = cameraManager.getCameraCharacteristics(firstCamera)
+
+    ch.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!.getOutputSizes(ImageFormat.JPEG).maxByOrNull { it.height * it.width }!!
 
 }
+
+
+
+//fun startCameraSession() {
+//    val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+//    if (cameraManager.cameraIdList.isEmpty()) {
+//        // no cameras
+//        return
+//    }
+//    val firstCamera = cameraIdList[0]
+//    cameraManager.openCamera(firstCamera, object: CameraDevice.StateCallback() {
+//        override fun onDisconnected(p0: CameraDevice) { }
+//        override fun onError(p0: CameraDevice, p1: Int) { }
+//
+//        override fun onOpened(cameraDevice: CameraDevice) {
+//            // use the camera
+//            val cameraCharacteristics =    cameraManager.getCameraCharacteristics(cameraDevice.id)
+//
+//            cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]?.let { streamConfigurationMap ->
+//                streamConfigurationMap.getOutputSizes(ImageFormat.YUV_420_888)?.let { yuvSizes ->
+//                    val previewSize = yuvSizes.last()
+//
+//                }
+//
+//            }
+//        }
+//    }, Handler { true })
+//}
