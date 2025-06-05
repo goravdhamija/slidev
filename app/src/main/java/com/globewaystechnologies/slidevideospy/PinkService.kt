@@ -42,6 +42,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.view.Surface
 import android.view.TextureView
+import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.io.File
 
@@ -111,6 +112,7 @@ class PinkService : Service() {
         fun getService(): PinkService = this@PinkService
     }
 
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @RequiresPermission(Manifest.permission.CAMERA)
     override fun onCreate() {
         super.onCreate()
@@ -119,11 +121,14 @@ class PinkService : Service() {
 
         startForeground(123,
             createNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         )
 
-        Log.d("PinkService", "On Create Called" )
+        Log.d("PinkService", "On Create Services" )
 
     }
 
@@ -131,14 +136,8 @@ class PinkService : Service() {
     @RequiresPermission(Manifest.permission.CAMERA)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
-
-
-
         startCameraAndRecord()
-
         return START_STICKY
-
-
 
     }
 
@@ -169,7 +168,8 @@ class PinkService : Service() {
     private fun startCameraAndRecord() {
 
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-        cameraId = cameraManager.cameraIdList.first()
+//        cameraId = cameraManager.cameraIdList.first()
+        cameraId = cameraManager.cameraIdList[3]
         cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
@@ -186,43 +186,41 @@ class PinkService : Service() {
         }, null)
     }
 
+
+
     private fun startRecordingSession() {
         requestAudioFocus()
-
         val mediaRecorder = MediaRecorder()
         this.mediaRecorder = mediaRecorder
-
-
         val publicDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
             "MyAppVideos"
         )
         if (!publicDir.exists()) publicDir.mkdirs()
-
         val videoFile = File(publicDir, "video_${System.currentTimeMillis()}.mp4")
-
         Log.d(
                 "PinkServiceCamera:",
                 "Camera Facing. :${publicDir}"
             )
 
         mediaRecorder.apply {
-            setOrientationHint(90)
-            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            //setOrientationHint(90)
+           // setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setOutputFile(videoFile.absolutePath)
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setAudioEncodingBitRate(96000)
-           // setAudioSamplingRate(44100)
-            setAudioSamplingRate(16000)
+            setAudioSamplingRate(44100)
+//            setAudioSamplingRate(16000)
             setVideoSize(1920, 1080)
            // setVideoSize(1280, 720)
             setVideoFrameRate(30)
-            //setVideoEncodingBitRate(3 * 1024 * 1024)
-            setVideoEncodingBitRate(8 * 1024 * 1024)
-            //setVideoEncodingBitRate(10 * 1024 * 1024)
+            setVideoEncodingBitRate(3 * 1024 * 1024)
+//            setVideoEncodingBitRate(8 * 1024 * 1024)
+//            setVideoEncodingBitRate(10 * 1024 * 1024)
             prepare()
         }
 
@@ -255,7 +253,8 @@ class PinkService : Service() {
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        //.setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                         .build()
                 )
                 .build()
@@ -286,7 +285,7 @@ class PinkService : Service() {
         }
         cameraCaptureSession?.close()
         cameraDevice?.close()
-//        releaseWakeLock()
+        releaseWakeLock()
     }
 
 
