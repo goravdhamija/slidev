@@ -46,8 +46,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.io.File
 
-class PinkService : Service() {
-
+class SecondCameraService : Service() {
 
     private var allowRebind: Boolean = true
     private var serviceRunningCurrently: Boolean = true
@@ -76,8 +75,8 @@ class PinkService : Service() {
         }
     }
 
-    private val binder: PinkServiceBinder by lazy {
-        PinkServiceBinder()
+    private val binder: SecondCameraServiceBinder by lazy {
+        SecondCameraServiceBinder()
     }
 
     // Random number generator.
@@ -88,7 +87,7 @@ class PinkService : Service() {
 
 
     override fun onBind(intent: Intent): IBinder {
-       // TODO("Return the communication channel to the service.")
+        // TODO("Return the communication channel to the service.")
         return binder
     }
 
@@ -108,8 +107,8 @@ class PinkService : Service() {
         return PendingIntent.getService(this,0,serviceIntent, PendingIntent.FLAG_IMMUTABLE)
     }
 
-    inner class PinkServiceBinder: Binder() {
-        fun getService(): PinkService = this@PinkService
+    inner class SecondCameraServiceBinder: Binder() {
+        fun getService(): SecondCameraService = this@SecondCameraService
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -119,9 +118,9 @@ class PinkService : Service() {
 
         acquireWakeLock()
 
-        startForeground(123,
+        startForeground(125,
             createNotification(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
@@ -143,7 +142,7 @@ class PinkService : Service() {
 
 
     private fun createNotification(): Notification {
-        val channelId = "audio_recording_channel"
+        val channelId = "audio_recording_channel_2"
         val channelName = "Audio Recording"
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -169,7 +168,7 @@ class PinkService : Service() {
 
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
 //        cameraId = cameraManager.cameraIdList.first()
-        cameraId = cameraManager.cameraIdList[0]
+        cameraId = cameraManager.cameraIdList[1]
         cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
@@ -194,17 +193,17 @@ class PinkService : Service() {
         this.mediaRecorder = mediaRecorder
         val publicDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-            "MyAppVideos"
+            "MyAppVideos2"
         )
         if (!publicDir.exists()) publicDir.mkdirs()
         val videoFile = File(publicDir, "video_${System.currentTimeMillis()}.mp4")
         Log.d(
-                "PinkServiceCamera:",
-                "Camera Facing. :${publicDir}"
-            )
+            "PinkServiceCamera:",
+            "Camera Facing. :${publicDir}"
+        )
 
         mediaRecorder.apply {
-            setOrientationHint(90)
+            setOrientationHint(180)
 //            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
             setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)

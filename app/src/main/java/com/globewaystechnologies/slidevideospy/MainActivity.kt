@@ -105,6 +105,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         val serviceIntent = Intent(this, PinkService::class.java)
+        val serviceSecondCameraIntent = Intent(this, SecondCameraService::class.java)
         super.onCreate(savedInstanceState)
 
         var cameraManager: CameraManager
@@ -129,12 +130,14 @@ class MainActivity : ComponentActivity() {
                         FilledButtonStartForground {
 
                             startForegroundService(serviceIntent)
+                            startForegroundService(serviceSecondCameraIntent)
 
                         }
 
                         FilledButtonStopForground {
 
                             stopService(serviceIntent)
+                            stopService(serviceSecondCameraIntent)
 
                         }
 
