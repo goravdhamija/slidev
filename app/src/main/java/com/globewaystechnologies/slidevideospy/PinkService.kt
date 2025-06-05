@@ -202,7 +202,7 @@ class PinkService : Service() {
         val videoFile = File(publicDir, "video_${System.currentTimeMillis()}.mp4")
 
         Log.d(
-                "PinkServiceCamera",
+                "PinkServiceCamera:",
                 "Camera Facing. :${publicDir}"
             )
 
