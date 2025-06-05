@@ -215,10 +215,14 @@ class PinkService : Service() {
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setAudioEncodingBitRate(96000)
-            setAudioSamplingRate(44100)
-            setVideoSize(1280, 720)
+           // setAudioSamplingRate(44100)
+            setAudioSamplingRate(16000)
+            setVideoSize(1920, 1080)
+           // setVideoSize(1280, 720)
             setVideoFrameRate(30)
-            setVideoEncodingBitRate(3 * 1024 * 1024)
+            //setVideoEncodingBitRate(3 * 1024 * 1024)
+            setVideoEncodingBitRate(8 * 1024 * 1024)
+            //setVideoEncodingBitRate(10 * 1024 * 1024)
             prepare()
         }
 

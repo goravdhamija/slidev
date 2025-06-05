@@ -50,7 +50,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Surface
-import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
+
 import android.os.Handler
 import android.os.HandlerThread
 import android.hardware.camera2.CameraAccessException
