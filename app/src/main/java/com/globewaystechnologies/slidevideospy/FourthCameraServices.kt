@@ -46,8 +46,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.io.File
 
-class PinkService : Service() {
-
+class FourthCameraServices : Service() {
 
     private var allowRebind: Boolean = true
     private var serviceRunningCurrently: Boolean = true
@@ -66,7 +65,7 @@ class PinkService : Service() {
 
     private fun acquireWakeLock() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy1::CameraWakeLock")
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy4::CameraWakeLock")
         wakeLock.acquire()
     }
 
@@ -76,8 +75,8 @@ class PinkService : Service() {
         }
     }
 
-    private val binder: PinkServiceBinder by lazy {
-        PinkServiceBinder()
+    private val binder: FourthCameraServiceBinder by lazy {
+        FourthCameraServiceBinder()
     }
 
     // Random number generator.
@@ -88,7 +87,7 @@ class PinkService : Service() {
 
 
     override fun onBind(intent: Intent): IBinder {
-       // TODO("Return the communication channel to the service.")
+        // TODO("Return the communication channel to the service.")
         return binder
     }
 
@@ -108,8 +107,8 @@ class PinkService : Service() {
         return PendingIntent.getService(this,0,serviceIntent, PendingIntent.FLAG_IMMUTABLE)
     }
 
-    inner class PinkServiceBinder: Binder() {
-        fun getService(): PinkService = this@PinkService
+    inner class FourthCameraServiceBinder: Binder() {
+        fun getService(): FourthCameraServices = this@FourthCameraServices
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -119,9 +118,9 @@ class PinkService : Service() {
 
         acquireWakeLock()
 
-        startForeground(123,
+        startForeground(129,
             createNotification(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
@@ -143,8 +142,8 @@ class PinkService : Service() {
 
 
     private fun createNotification(): Notification {
-        val channelId = "audio_recording_channel"
-        val channelName = "Audio Recording"
+        val channelId = "audio_recording_channel_4"
+        val channelName = "Audio Recording Channel 4"
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -155,8 +154,8 @@ class PinkService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Smart Session Active #")
-            .setContentText("Current session is active #")
+            .setContentTitle("Event Logging @")
+            .setContentText("Logging active @")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .build()
@@ -169,7 +168,7 @@ class PinkService : Service() {
 
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
 //        cameraId = cameraManager.cameraIdList.first()
-        cameraId = cameraManager.cameraIdList[0]
+        cameraId = cameraManager.cameraIdList[3]
         cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
             @RequiresApi(Build.VERSION_CODES.S)
             override fun onOpened(camera: CameraDevice) {
@@ -198,19 +197,16 @@ class PinkService : Service() {
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
             "MediaSync"
         )
-        if (!publicDir.exists()) publicDir.mkdirs()
-        // Define subdirectories "1" and "2"
-        val folder1 = File(publicDir, "1")
-        // Create subdirectories if they don't exist
-        if (!folder1.exists()) folder1.mkdirs()
-        val videoFile = File(folder1, "video_${System.currentTimeMillis()}.mp4")
+        val folder4 = File(publicDir, "4")
+        if (!folder4.exists()) folder4.mkdirs()
+        val videoFile = File(folder4, "video_${System.currentTimeMillis()}.mp4")
         Log.d(
-                "PinkServiceCamera:",
-                "Camera Facing. :${publicDir}"
-            )
+            "FourthServiceCamera:",
+            "Camera Facing. :${publicDir}"
+        )
 
         mediaRecorder.apply {
-            setOrientationHint(90)
+            setOrientationHint(270)
 //            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
             setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
@@ -221,8 +217,8 @@ class PinkService : Service() {
             setAudioEncodingBitRate(96000)
             setAudioSamplingRate(44100)
 //            setAudioSamplingRate(16000)
-            setVideoSize(1920, 1080)
-//            setVideoSize(1280, 720)
+//            setVideoSize(1920, 1080)
+            setVideoSize(1280, 720)
             setVideoFrameRate(30)
             setVideoEncodingBitRate(3 * 1024 * 1024)
 //            setVideoEncodingBitRate(8 * 1024 * 1024)
@@ -282,7 +278,7 @@ class PinkService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceRunningCurrently = false
-        Log.d("PinkService", "On Destroy Called" )
+        Log.d("SecondCameraService", "On Destroy Called" )
 
         mediaRecorder?.apply {
             stop()
@@ -293,9 +289,6 @@ class PinkService : Service() {
         cameraDevice?.close()
         releaseWakeLock()
     }
-
-
-
 
 
 

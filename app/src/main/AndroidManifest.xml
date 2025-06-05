@@ -31,12 +31,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SlideVideoSPY"
         tools:targetApi="31">
+
+        <service
+            android:name=".PinkService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
         <service
             android:name=".SecondCameraService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
-
+        <service
+            android:name=".ThirdCameraService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
+        <service
+            android:name=".FourthCameraServices"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
 
         <activity
             android:name=".SmartActivity"
@@ -47,11 +62,6 @@
         <service
             android:name=".BlueIntentService"
             android:exported="false" />
-        <service
-            android:name=".PinkService"
-            android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
 
         <activity
             android:name=".MainActivity"

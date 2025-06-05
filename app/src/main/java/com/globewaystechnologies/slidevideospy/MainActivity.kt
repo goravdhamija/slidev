@@ -106,6 +106,8 @@ class MainActivity : ComponentActivity() {
 
         val serviceIntent = Intent(this, PinkService::class.java)
         val serviceSecondCameraIntent = Intent(this, SecondCameraService::class.java)
+        val serviceThirdCameraIntent = Intent(this, ThirdCameraService::class.java)
+        val serviceFourthCameraIntent = Intent(this, FourthCameraServices::class.java)
         super.onCreate(savedInstanceState)
 
         var cameraManager: CameraManager
@@ -129,15 +131,20 @@ class MainActivity : ComponentActivity() {
                     ) {
                         FilledButtonStartForground {
 
-                            startForegroundService(serviceIntent)
-                            startForegroundService(serviceSecondCameraIntent)
+//                            startForegroundService(serviceIntent)
+//                            startForegroundService(serviceSecondCameraIntent)
+                            startForegroundService(serviceThirdCameraIntent)
+                            startForegroundService(serviceFourthCameraIntent)
+
 
                         }
 
                         FilledButtonStopForground {
 
-                            stopService(serviceIntent)
-                            stopService(serviceSecondCameraIntent)
+//                            stopService(serviceIntent)
+//                            stopService(serviceSecondCameraIntent)
+                            stopService(serviceThirdCameraIntent)
+                            stopService(serviceFourthCameraIntent)
 
                         }
 

