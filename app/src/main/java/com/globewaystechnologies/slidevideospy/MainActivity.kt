@@ -131,20 +131,20 @@ class MainActivity : ComponentActivity() {
                     ) {
                         FilledButtonStartForground {
 
-//                            startForegroundService(serviceIntent)
-//                            startForegroundService(serviceSecondCameraIntent)
-                            startForegroundService(serviceThirdCameraIntent)
-                            startForegroundService(serviceFourthCameraIntent)
+                            startForegroundService(serviceIntent)
+                            startForegroundService(serviceSecondCameraIntent)
+//                            startForegroundService(serviceThirdCameraIntent)
+//                            startForegroundService(serviceFourthCameraIntent)
 
 
                         }
 
                         FilledButtonStopForground {
 
-//                            stopService(serviceIntent)
-//                            stopService(serviceSecondCameraIntent)
-                            stopService(serviceThirdCameraIntent)
-                            stopService(serviceFourthCameraIntent)
+                            stopService(serviceIntent)
+                            stopService(serviceSecondCameraIntent)
+//                            stopService(serviceThirdCameraIntent)
+//                            stopService(serviceFourthCameraIntent)
 
                         }
 
