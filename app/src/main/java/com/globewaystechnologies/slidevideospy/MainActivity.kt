@@ -54,6 +54,7 @@ import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 import android.os.Handler
 import android.os.HandlerThread
 import android.hardware.camera2.CameraAccessException
+import android.os.PowerManager
 import androidx.core.content.ContextCompat.getSystemService
 
 
@@ -109,28 +110,6 @@ class MainActivity : ComponentActivity() {
         var cameraManager: CameraManager
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val cameraIdList = cameraManager.cameraIdList
-        val cameraThread = HandlerThread("CameraThread").apply { start() }
-        val cameraHandler = Handler(cameraThread.looper)
-        val firstCamera = cameraIdList[0]
-
-        cameraManager.getCameraCharacteristics(firstCamera)
-
-       // cameraManager.openCamera(firstCamera)
-
-//        cameraManager.openCamera(firstCamera, object : CameraDevice.StateCallback() {
-//            override fun onOpened(camera: CameraDevice) {
-////                cameraDevice = camera
-////                createCameraPreviewSession()
-//            }
-//
-//            override fun onDisconnected(camera: CameraDevice) {
-//                camera.close()
-//            }
-//
-//            override fun onError(camera: CameraDevice, error: Int) {
-//                camera.close()
-//            }
-//        }, null)
 
 
 
@@ -141,7 +120,7 @@ class MainActivity : ComponentActivity() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(start = 20.dp, top = 60.dp, end = 20.dp, bottom = 20.dp),
+                        .padding(start = 20.dp, top = 90.dp, end = 20.dp, bottom = 20.dp),
                     contentAlignment = Alignment.TopStart
                 ) {
                     Column(
@@ -168,7 +147,7 @@ class MainActivity : ComponentActivity() {
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(20.dp),
                                             modifier = Modifier
-                                            .size(width = 150.dp, height = 700.dp)
+                                            .size(width = 150.dp, height = 540.dp)
                                     .border(1.dp, Color.Magenta)
                                 ) {
                                     Text(
@@ -205,11 +184,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        CameraDashView(LocalContext.current)
 
-                      //  CameraFirstView()
 
-                      //  CameraSecondView()
 
                     }
                 }
@@ -222,18 +198,25 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.CAMERA,
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE,
                 Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.FOREGROUND_SERVICE,
+                Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION,
                 Manifest.permission.ACCESS_FINE_LOCATION),
             200)
 
 
+
+
     }
+
+
+
 }
+
+
 
 
 @Composable
 fun FilledButtonStartForground(onClick: () -> Unit) {
-
-    var context = LocalContext.current
 
     Button(onClick = { onClick() }) {
         Text("Start Foreground Services With Notification")
@@ -251,100 +234,8 @@ fun FilledButtonStopForground(onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun CameraFirstView() {
-    var context = LocalContext.current
-    var lifecycleOwner = LocalLifecycleOwner.current
-    var cameraController = remember { LifecycleCameraController(context) }
-    val camWidth = 100.dp
-    val camHeight = 140.dp
-    AndroidView(
-        modifier = Modifier
-            .width(camWidth)
-            .height(camHeight)
-            .border(1.dp, Color.Gray),
-        factory = { context ->
-            PreviewView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT,MATCH_PARENT)
-//                setBackgroundColor(Color.Black)
-                scaleType = PreviewView.ScaleType.FIT_START
-            }.also { previewView ->
-                previewView.controller = cameraController
-                cameraController.bindToLifecycle(lifecycleOwner)
-            }
-        }
-    )
-
-}
 
 
 
-@Composable
-fun CameraSecondView() {
-    var context = LocalContext.current
-    var lifecycleOwner = LocalLifecycleOwner.current
-    var cameraController2 = remember { LifecycleCameraController(context) }
-    val camWidth = 100.dp
-    val camHeight = 140.dp
-    AndroidView(
-        modifier = Modifier
-            .width(camWidth)
-            .height(camHeight)
-            .border(1.dp, Color.Gray),
-        factory = { context ->
-            PreviewView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT,MATCH_PARENT)
-//                setBackgroundColor(Color.Black)
-                scaleType = PreviewView.ScaleType.FIT_START
-            }.also { previewView ->
-                previewView.controller = cameraController2
-                cameraController2.bindToLifecycle(lifecycleOwner)
-            }
-        }
-    )
-
-}
 
 
-@Composable
-fun CameraDashView(context: Context) {
-    var cameraManager: CameraManager
-    cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-    val cameraIdList = cameraManager.cameraIdList
-    val cameraThread = HandlerThread("CameraThread").apply { start() }
-    val cameraHandler = Handler(cameraThread.looper)
-    val firstCamera = cameraIdList[0]
-
-    var ch = cameraManager.getCameraCharacteristics(firstCamera)
-
-    ch.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!.getOutputSizes(ImageFormat.JPEG).maxByOrNull { it.height * it.width }!!
-
-}
-
-
-
-//fun startCameraSession() {
-//    val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-//    if (cameraManager.cameraIdList.isEmpty()) {
-//        // no cameras
-//        return
-//    }
-//    val firstCamera = cameraIdList[0]
-//    cameraManager.openCamera(firstCamera, object: CameraDevice.StateCallback() {
-//        override fun onDisconnected(p0: CameraDevice) { }
-//        override fun onError(p0: CameraDevice, p1: Int) { }
-//
-//        override fun onOpened(cameraDevice: CameraDevice) {
-//            // use the camera
-//            val cameraCharacteristics =    cameraManager.getCameraCharacteristics(cameraDevice.id)
-//
-//            cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]?.let { streamConfigurationMap ->
-//                streamConfigurationMap.getOutputSizes(ImageFormat.YUV_420_888)?.let { yuvSizes ->
-//                    val previewSize = yuvSizes.last()
-//
-//                }
-//
-//            }
-//        }
-//    }, Handler { true })
-//}

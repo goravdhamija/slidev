@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.os.Binder
@@ -21,7 +22,6 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -30,24 +30,50 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Random
 import kotlin.concurrent.thread
-
 import android.hardware.camera2.CameraManager
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.MediaRecorder
+import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
+import android.os.PowerManager
+import android.view.Surface
 import android.view.TextureView
 import androidx.annotation.RequiresPermission
+import java.io.File
 
 class PinkService : Service() {
 
 
-    private var allowRebind: Boolean = false
+    private var allowRebind: Boolean = true
     private var serviceRunningCurrently: Boolean = true
     private lateinit var cameraManager: CameraManager
     private lateinit var backgroundHandlerThread: HandlerThread
     private lateinit var backgroundHandler: Handler
 
-    private lateinit var backgroundHandlerThread2: HandlerThread
-    private lateinit var backgroundHandler2: Handler
+    private var cameraDevice: CameraDevice? = null
+    private var mediaRecorder: MediaRecorder? = null
+    private var cameraCaptureSession: CameraCaptureSession? = null
+    private lateinit var cameraId: String
+
+    private lateinit var wakeLock: PowerManager.WakeLock
+
+
+
+    private fun acquireWakeLock() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy::CameraWakeLock")
+        wakeLock.acquire()
+    }
+
+    private fun releaseWakeLock() {
+        if (::wakeLock.isInitialized && wakeLock.isHeld) {
+            wakeLock.release()
+        }
+    }
 
     private val binder: PinkServiceBinder by lazy {
         PinkServiceBinder()
@@ -76,276 +102,191 @@ class PinkService : Service() {
         // after onUnbind() has already been called
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        Log.d("PinkService", "On Create Called" )
-        Toast.makeText(this, "On Create Called", Toast.LENGTH_SHORT).show()
+    fun getPendingIntent(): PendingIntent{
+        val serviceIntent = Intent(this, PinkService::class.java)
+        return PendingIntent.getService(this,0,serviceIntent, PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    inner class PinkServiceBinder: Binder() {
+        fun getService(): PinkService = this@PinkService
     }
 
     @RequiresPermission(Manifest.permission.CAMERA)
+    override fun onCreate() {
+        super.onCreate()
+
+        acquireWakeLock()
+
+        startForeground(123,
+            createNotification(),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+        )
+
+        Log.d("PinkService", "On Create Called" )
+
+    }
+
+
+    @RequiresPermission(Manifest.permission.CAMERA)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("PinkService", "On Start Command" )
-        Toast.makeText(this, "On Start", Toast.LENGTH_SHORT).show()
 
-        Log.d("PinkService", "Outer Threade ${Thread.currentThread().name}")
-        serviceRunningCurrently = true
 
-        thread(start = true){
-            while (serviceRunningCurrently) {
-                Log.d("PinkService", "Logging Message General Threade ${Thread.currentThread().name}")
-                Thread.sleep(1000)
 
-            }
+
+        startCameraAndRecord()
+
+        return START_STICKY
+
+
+
+    }
+
+
+    private fun createNotification(): Notification {
+        val channelId = "audio_recording_channel"
+        val channelName = "Audio Recording"
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId, channelName,
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            manager.createNotificationChannel(channel)
         }
 
-        var job = GlobalScope.launch(Dispatchers.Main) {
+        return NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Recording Audio")
+            .setContentText("Audio recording is in progress")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setOngoing(true)
+            .build()
+    }
 
-            while (serviceRunningCurrently) {
-                Log.d("PinkService", "Logging Message Globalscope Coroutine Thread ${Thread.currentThread().name}")
-                delay(1000L)
 
-                withContext(Dispatchers.Main){
-                    Log.d("PinkService", "Logging Message Globalscope Coroutine Thread--2-- ${Thread.currentThread().name}")
+
+    @RequiresPermission(Manifest.permission.CAMERA)
+    private fun startCameraAndRecord() {
+
+        cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
+        cameraId = cameraManager.cameraIdList.first()
+        cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+            override fun onOpened(camera: CameraDevice) {
+                cameraDevice = camera
+                startRecordingSession()
+            }
+
+            override fun onDisconnected(camera: CameraDevice) {
+                camera.close()
+            }
+
+            override fun onError(camera: CameraDevice, error: Int) {
+                camera.close()
+            }
+        }, null)
+    }
+
+    private fun startRecordingSession() {
+        requestAudioFocus()
+
+        val mediaRecorder = MediaRecorder()
+        this.mediaRecorder = mediaRecorder
+
+
+        val publicDir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+            "MyAppVideos"
+        )
+        if (!publicDir.exists()) publicDir.mkdirs()
+
+        val videoFile = File(publicDir, "video_${System.currentTimeMillis()}.mp4")
+
+        Log.d(
+                "PinkServiceCamera",
+                "Camera Facing. :${publicDir}"
+            )
+
+        mediaRecorder.apply {
+            setOrientationHint(90)
+            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            setVideoSource(MediaRecorder.VideoSource.SURFACE)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setOutputFile(videoFile.absolutePath)
+            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            setAudioEncodingBitRate(96000)
+            setAudioSamplingRate(44100)
+            setVideoSize(1280, 720)
+            setVideoFrameRate(30)
+            setVideoEncodingBitRate(3 * 1024 * 1024)
+            prepare()
+        }
+
+        val surfaces = ArrayList<Surface>()
+        val recorderSurface = mediaRecorder.surface
+        surfaces.add(recorderSurface)
+
+        cameraDevice?.createCaptureSession(surfaces, object : CameraCaptureSession.StateCallback() {
+            override fun onConfigured(session: CameraCaptureSession) {
+                cameraCaptureSession = session
+                val captureRequest = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
+                    addTarget(recorderSurface)
                 }
-
+                session.setRepeatingRequest(captureRequest.build(), null, null)
+                mediaRecorder.start()
             }
 
+            override fun onConfigureFailed(session: CameraCaptureSession) {
+                Log.e("VideoService", "Camera configuration failed")
+            }
+        }, null)
+    }
+
+
+    private fun requestAudioFocus() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        .build()
+                )
+                .build()
+            audioManager.requestAudioFocus(focusRequest)
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.requestAudioFocus(
+                null,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
         }
+    }
 
-        startLoggerForegroundServices()
-
-        return super.onStartCommand(intent, flags, startId)
-
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.d("RecordingService", "App removed from task manager")
     }
 
     override fun onDestroy() {
         super.onDestroy()
         serviceRunningCurrently = false
         Log.d("PinkService", "On Destroy Called" )
-        Toast.makeText(this, "On Destroy Called", Toast.LENGTH_SHORT).show()
-    }
 
-
-    @RequiresPermission(Manifest.permission.CAMERA)
-    fun startLoggerForegroundServices(){
-        createNotificationChannel()
-        val notification = createNotification()
-        Log.d("PinkService", "Foreground Service Started" )
-        startForeground(
-            111,
-            notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-                } else {
-                    0
-                }
-            )
-        startForeground(
-            111,
-            notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-            } else {
-                0
-            }
-        )
-        startForeground(
-            111,
-            notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-            } else {
-                0
-            }
-        )
-        startForeground(
-            111,
-            notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            } else {
-                0
-            }
-        )
-
-//        startForeground(
-//            111,
-//            notification,
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-//            } else {
-//                0
-//            }
-//        )
-        startForeground(
-            111,
-            notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            } else {
-                0
-            }
-        )
-
-
-
-        cameraServicesPoint()
-
-
-
-
-
-    }
-
-    fun getPendingIntent(): PendingIntent{
-        val serviceIntent = Intent(this, PinkService::class.java)
-        return PendingIntent.getActivity(this,0,serviceIntent, PendingIntent.FLAG_IMMUTABLE)
-    }
-
-    fun createNotificationChannel(): NotificationChannel {
-        val channel = NotificationChannel("ID","PINKSERVICE", NotificationManager.IMPORTANCE_DEFAULT)
-        val notificationManager = ContextCompat.getSystemService(this, NotificationManager::class.java)
-        notificationManager!!.createNotificationChannel(channel)
-        return channel
-    }
-
-    fun createNotification():Notification{
-            var notification = NotificationCompat.Builder(this, "ID")
-                .setContentText("Foreground Pink Service Running")
-                .setContentTitle("PinkServices")
-                .setContentIntent(getPendingIntent())
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setOngoing(true)
-                .build()
-            return notification
-    }
-
-
-
-    inner class PinkServiceBinder: Binder() {
-        fun getService(): PinkService = this@PinkService
-    }
-
-
-
-    @RequiresPermission(Manifest.permission.CAMERA)
-    fun cameraServicesPoint(){
-        cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-        val cameraIdList = cameraManager.cameraIdList
-
-        for (cameraItem in cameraIdList) {
-            var charactersticsCamera = cameraManager.getCameraCharacteristics(cameraItem)
-
-            Log.d(
-                "PinkServiceCamera",
-                "Camera Facing. :${charactersticsCamera.get(CameraCharacteristics.LENS_FACING)}"
-            )
+        mediaRecorder?.apply {
+            stop()
+            reset()
+            release()
         }
-
-        startBackgroundThread("dipdip")
-        cameraManager.openCamera(cameraIdList[0], cameraStateCallback,backgroundHandler)
-
-
-        startBackgroundThread2("triptrip")
-        cameraManager.openCamera(cameraIdList[1], cameraStateCallback2,backgroundHandler2)
-
-
+        cameraCaptureSession?.close()
+        cameraDevice?.close()
+//        releaseWakeLock()
     }
 
 
 
-     val cameraStateCallback = object : CameraDevice.StateCallback() {
-        override fun onOpened(camera: CameraDevice) {
-            Log.d("PinkServiceCamera", "Camera Opened 1")
-
-        }
-
-        override fun onDisconnected(cameraDevice: CameraDevice) {
-            Log.d("PinkServiceCamera", "Camera Disconnected 1")
-        }
-
-        override fun onError(cameraDevice: CameraDevice, error: Int) {
-            val errorMsg = when(error) {
-                ERROR_CAMERA_DEVICE -> "Fatal (device)"
-                ERROR_CAMERA_DISABLED -> "Device policy"
-                ERROR_CAMERA_IN_USE -> "Camera in use"
-                ERROR_CAMERA_SERVICE -> "Fatal (service)"
-                ERROR_MAX_CAMERAS_IN_USE -> "Maximum cameras in use"
-                else -> "Unknown"
-            }
-            Log.e("PinkServiceCamera", "Error when trying to connect camera $errorMsg")
-        }
-    }
-
-
-     val cameraStateCallback2 = object : CameraDevice.StateCallback() {
-        override fun onOpened(camera: CameraDevice) {
-            Log.d("PinkServiceCamera", "Camera Opened 2")
-        }
-
-        override fun onDisconnected(cameraDevice: CameraDevice) {
-            Log.d("PinkServiceCamera", "Camera Disconnected 2")
-        }
-
-        override fun onError(cameraDevice: CameraDevice, error: Int) {
-            val errorMsg = when(error) {
-                ERROR_CAMERA_DEVICE -> "Fatal (device)"
-                ERROR_CAMERA_DISABLED -> "Device policy"
-                ERROR_CAMERA_IN_USE -> "Camera in use"
-                ERROR_CAMERA_SERVICE -> "Fatal (service)"
-                ERROR_MAX_CAMERAS_IN_USE -> "Maximum cameras in use"
-                else -> "Unknown"
-            }
-            Log.e("PinkServiceCamera", "Error when trying to connect camera $errorMsg")
-        }
-    }
-
-
-     fun startBackgroundThread(threadName:String) {
-        backgroundHandlerThread = HandlerThread(threadName)
-        backgroundHandlerThread.start()
-        backgroundHandler = Handler(
-            backgroundHandlerThread.looper)
-    }
-
-     fun stopBackgroundThread() {
-        backgroundHandlerThread.quitSafely()
-        backgroundHandlerThread.join()
-    }
-
-
-    fun startBackgroundThread2(threadName:String) {
-        backgroundHandlerThread2 = HandlerThread(threadName)
-        backgroundHandlerThread2.start()
-        backgroundHandler2 = Handler(
-            backgroundHandlerThread2.looper)
-    }
-
-    fun stopBackgroundThread2() {
-        backgroundHandlerThread2.quitSafely()
-        backgroundHandlerThread2.join()
-    }
-
-
-     val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-        override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
-            Log.d("PinkServiceCamera", "SurfaceTexture available")
-
-        }
-        override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
-            Log.d("PinkServiceCamera", "SurfaceTexture size changed")
-        }
-
-         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-             Log.d("PinkServiceCamera", "SurfaceTexture destroyed")
-             TODO("Not yet implemented")
-         }
-
-        override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
-            Log.d("PinkServiceCamera", "SurfaceTexture updated")
-
-        }
-    }
 
 
 
