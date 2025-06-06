@@ -11,6 +11,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.PixelFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -62,6 +63,10 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.*
 import android.util.Size
+import android.view.LayoutInflater
+import android.view.View
+import android.view.WindowManager
+import com.globewaystechnologies.slidevideospy.databinding.OverlayViewBinding
 import java.util.Date
 import java.util.Locale
 
@@ -84,10 +89,11 @@ class PinkService : Service() {
     private lateinit var wakeLock: PowerManager.WakeLock
     var videoUri: Uri? = null
     var fileDescriptor: FileDescriptor? = null
+    private lateinit var windowManager: WindowManager
+    lateinit var overlayView: View
 
 
-
-    private fun acquireWakeLock() {
+        private fun acquireWakeLock() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy1::CameraWakeLock")
         wakeLock.acquire()
@@ -151,7 +157,7 @@ class PinkService : Service() {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         )
 
-
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         Log.d("PinkService", "On Create Services" )
 
@@ -162,6 +168,8 @@ class PinkService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
         startCameraAndRecord()
+        startOverlayView()
+
         return START_STICKY
 
     }
@@ -349,6 +357,9 @@ class PinkService : Service() {
         cameraDevice?.close()
         releaseWakeLock()
 
+
+        stopOverlayView()
+
         videoUri?.let {
             val contentValues = ContentValues().apply {
                 put(MediaStore.Video.Media.IS_PENDING, 0)
@@ -386,6 +397,26 @@ class PinkService : Service() {
 
 
 
+    fun startOverlayView() {
+        val overlayParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+
+         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_view, null)
+
+        windowManager.addView(overlayView, overlayParams)
+    }
+
+    fun stopOverlayView() {
+        windowManager.removeView(overlayView)
+    }
 
 
 }

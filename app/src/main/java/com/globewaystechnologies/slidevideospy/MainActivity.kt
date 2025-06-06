@@ -54,7 +54,9 @@ import androidx.compose.material3.Surface
 import android.os.Handler
 import android.os.HandlerThread
 import android.hardware.camera2.CameraAccessException
+import android.net.Uri
 import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.ContextCompat.getSystemService
 
@@ -223,7 +225,13 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.ACCESS_FINE_LOCATION),
             200)
 
-
+        if (!Settings.canDrawOverlays(this)) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, 1234) // Use a constant request code
+        }
 
 
     }
