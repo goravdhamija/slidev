@@ -133,7 +133,13 @@ class MainActivity : ComponentActivity() {
                         FilledButtonStartForground {
 
                             Toast.makeText(this@MainActivity, "Supports Concurent Camera ${supportsConcurrentRecording(cameraManager)}", Toast.LENGTH_LONG).show()
-
+                            if (supportsConcurrentRecording(cameraManager)) {
+                                Log.d(
+                                    "PinkServiceCameraPairs",
+                                    "${getConcurrentCameraPairs(cameraManager)}"
+                                )
+                            }
+                           //
 
                             startForegroundService(serviceIntent)
 //                            startForegroundService(serviceSecondCameraIntent)
