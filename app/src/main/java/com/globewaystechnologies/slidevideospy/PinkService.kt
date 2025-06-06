@@ -63,9 +63,12 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.*
 import android.util.Size
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.widget.Button
+import android.widget.FrameLayout
 import com.globewaystechnologies.slidevideospy.databinding.OverlayViewBinding
 import java.util.Date
 import java.util.Locale
@@ -81,6 +84,8 @@ class PinkService : Service() {
     private lateinit var backgroundHandler: Handler
     private lateinit var recordingSurface: Surface
 
+
+
     private var cameraDevice: CameraDevice? = null
     private var mediaRecorder: MediaRecorder? = null
     private var cameraCaptureSession: CameraCaptureSession? = null
@@ -89,8 +94,11 @@ class PinkService : Service() {
     private lateinit var wakeLock: PowerManager.WakeLock
     var videoUri: Uri? = null
     var fileDescriptor: FileDescriptor? = null
+
+    private lateinit var overlayView: View
     private lateinit var windowManager: WindowManager
-    lateinit var overlayView: View
+    private lateinit var overlayView2: FrameLayout
+    private lateinit var surfaceView: SurfaceView
 
 
         private fun acquireWakeLock() {
@@ -145,19 +153,10 @@ class PinkService : Service() {
     @RequiresPermission(Manifest.permission.CAMERA)
     override fun onCreate() {
         super.onCreate()
-
-        acquireWakeLock()
-
-        startForeground(123,
-            createNotification(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-        )
-
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        acquireWakeLock()
+        addOverlayWithCloseButton()
+        startOverlayView()
 
         Log.d("PinkService", "On Create Services" )
 
@@ -167,8 +166,20 @@ class PinkService : Service() {
     @RequiresPermission(Manifest.permission.CAMERA)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
+        // showCameraOverlay()
+
+        startForeground(123,
+            createNotification(),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        )
+
+
         startCameraAndRecord()
-        startOverlayView()
+
 
         return START_STICKY
 
@@ -294,7 +305,9 @@ class PinkService : Service() {
 
         val surfaces = ArrayList<Surface>()
         val recorderSurface = mediaRecorder.surface
+        val previewSurface = surfaceView.holder.surface
         surfaces.add(recorderSurface)
+        surfaces.add(previewSurface)
 
 
 
@@ -303,6 +316,7 @@ class PinkService : Service() {
                 cameraCaptureSession = session
                 val captureRequest = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
                     addTarget(recorderSurface)
+                    addTarget(previewSurface)
                 }
                 session.setRepeatingRequest(captureRequest.build(), null, null)
                 mediaRecorder.start()
@@ -357,15 +371,14 @@ class PinkService : Service() {
         cameraDevice?.close()
         releaseWakeLock()
 
-
-        stopOverlayView()
-
         videoUri?.let {
             val contentValues = ContentValues().apply {
                 put(MediaStore.Video.Media.IS_PENDING, 0)
             }
             contentResolver.update(it, contentValues, null, null)
         }
+
+        stopOverlayView()
 
     }
 
@@ -397,6 +410,88 @@ class PinkService : Service() {
 
 
 
+    private fun showCameraOverlay() {
+        surfaceView = SurfaceView(this)
+        surfaceView.holder.setFormat(PixelFormat.TRANSLUCENT)
+
+        val params = WindowManager.LayoutParams(
+            400, 400,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+
+        params.gravity = Gravity.TOP or Gravity.START
+        params.x = 100
+        params.y = 100
+
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager.addView(surfaceView, params)
+    }
+
+    private fun addOverlayWithCloseButton() {
+     //   windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+
+        // Create parent layout
+        overlayView2 = FrameLayout(this)
+
+        // Create and configure the SurfaceView
+        surfaceView = SurfaceView(this)
+        surfaceView.holder.setFormat(PixelFormat.TRANSLUCENT)
+        val surfaceLayoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+
+        // Add close button
+        val closeButton = Button(this).apply {
+            text = "✕"
+            setBackgroundColor(0x88FF0000.toInt()) // Semi-transparent red
+            setOnClickListener {
+                try {
+                    windowManager.removeView(overlayView2)
+                    //stopSelf()
+                    Toast.makeText(this@PinkService, "Overlay Closed", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+        val buttonParams = FrameLayout.LayoutParams(
+            100, 100,
+            Gravity.TOP or Gravity.END
+        )
+        buttonParams.setMargins(16, 16, 16, 16)
+
+        // Add views to layout
+        overlayView2.addView(surfaceView, surfaceLayoutParams)
+        overlayView2.addView(closeButton, buttonParams)
+
+        // WindowManager parameters
+        val overlayParams = WindowManager.LayoutParams(
+            600, 900,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+
+        overlayParams.gravity = Gravity.TOP or Gravity.START
+        overlayParams.x = 200
+        overlayParams.y = 900
+
+        windowManager.addView(overlayView2, overlayParams)
+    }
+
     fun startOverlayView() {
         val overlayParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -414,8 +509,21 @@ class PinkService : Service() {
         windowManager.addView(overlayView, overlayParams)
     }
 
-    fun stopOverlayView() {
-        windowManager.removeView(overlayView)
+    private fun stopOverlayView() {
+
+
+        try {
+
+
+            if (::overlayView2.isInitialized && overlayView2.windowToken != null) {
+                windowManager.removeView(overlayView2)
+            }
+            windowManager.removeView(overlayView)
+            windowManager.removeView(surfaceView)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
 
