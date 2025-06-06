@@ -455,6 +455,9 @@ class PinkService : Service() {
             setOnClickListener {
                 try {
                     windowManager.removeView(overlayView2)
+//                    overlayView2.visibility = View.GONE
+//                    overlayView2.visibility = View.VISIBLE
+                    toggleOverlay(true)
                     //stopSelf()
                     Toast.makeText(this@PinkService, "Overlay Closed", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
@@ -490,6 +493,12 @@ class PinkService : Service() {
         overlayParams.y = 900
 
         windowManager.addView(overlayView2, overlayParams)
+    }
+
+    fun toggleOverlay(show: Boolean) {
+        if (::overlayView2.isInitialized) {
+            overlayView2.visibility = if (show) View.VISIBLE else View.GONE
+        }
     }
 
     fun startOverlayView() {
