@@ -55,6 +55,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.hardware.camera2.CameraAccessException
 import android.os.PowerManager
+import android.widget.Toast
 import androidx.core.content.ContextCompat.getSystemService
 
 
@@ -131,8 +132,11 @@ class MainActivity : ComponentActivity() {
                     ) {
                         FilledButtonStartForground {
 
+                            Toast.makeText(this@MainActivity, "Supports Concurent Camera ${supportsConcurrentRecording(cameraManager)}", Toast.LENGTH_LONG).show()
+
+
                             startForegroundService(serviceIntent)
-                            startForegroundService(serviceSecondCameraIntent)
+//                            startForegroundService(serviceSecondCameraIntent)
 //                            startForegroundService(serviceThirdCameraIntent)
 //                            startForegroundService(serviceFourthCameraIntent)
 
@@ -142,7 +146,7 @@ class MainActivity : ComponentActivity() {
                         FilledButtonStopForground {
 
                             stopService(serviceIntent)
-                            stopService(serviceSecondCameraIntent)
+//                            stopService(serviceSecondCameraIntent)
 //                            stopService(serviceThirdCameraIntent)
 //                            stopService(serviceFourthCameraIntent)
 
@@ -172,7 +176,7 @@ class MainActivity : ComponentActivity() {
 
                                     }
 
-                                        var charactersticsCamera = cameraManager.getCameraCharacteristics(item)
+                                    var charactersticsCamera = cameraManager.getCameraCharacteristics(item)
                                     var previewSize = charactersticsCamera.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!.getOutputSizes(ImageFormat.JPEG).maxByOrNull { it.height * it.width }!!
 
 
@@ -223,7 +227,15 @@ class MainActivity : ComponentActivity() {
 }
 
 
+fun supportsConcurrentRecording(cameraManager: CameraManager): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            cameraManager.concurrentCameraIds.isNotEmpty()
+}
 
+@RequiresApi(Build.VERSION_CODES.R)
+fun getConcurrentCameraPairs(cameraManager: CameraManager): List<Set<String>> {
+    return cameraManager.concurrentCameraIds.toList()
+}
 
 @Composable
 fun FilledButtonStartForground(onClick: () -> Unit) {

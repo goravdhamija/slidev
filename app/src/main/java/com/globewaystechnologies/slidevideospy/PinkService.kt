@@ -7,6 +7,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -35,16 +36,35 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
+import android.os.ParcelFileDescriptor
 import android.os.PowerManager
+import android.provider.MediaStore
 import android.view.Surface
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.view.TextureView
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.io.File
+import java.io.FileDescriptor
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
+import java.text.SimpleDateFormat
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.FloatBuffer
+import android.opengl.GLES20
+import android.opengl.GLSurfaceView
+import android.os.*
+import android.util.Size
+import java.util.Date
+import java.util.Locale
+
 
 class PinkService : Service() {
 
@@ -54,6 +74,7 @@ class PinkService : Service() {
     private lateinit var cameraManager: CameraManager
     private lateinit var backgroundHandlerThread: HandlerThread
     private lateinit var backgroundHandler: Handler
+    private lateinit var recordingSurface: Surface
 
     private var cameraDevice: CameraDevice? = null
     private var mediaRecorder: MediaRecorder? = null
@@ -61,6 +82,8 @@ class PinkService : Service() {
     private lateinit var cameraId: String
 
     private lateinit var wakeLock: PowerManager.WakeLock
+    var videoUri: Uri? = null
+    var fileDescriptor: FileDescriptor? = null
 
 
 
@@ -128,6 +151,8 @@ class PinkService : Service() {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         )
 
+
+
         Log.d("PinkService", "On Create Services" )
 
     }
@@ -169,7 +194,7 @@ class PinkService : Service() {
 
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
 //        cameraId = cameraManager.cameraIdList.first()
-        cameraId = cameraManager.cameraIdList[0]
+        cameraId = cameraManager.cameraIdList[1]
         cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
             @RequiresApi(Build.VERSION_CODES.S)
             override fun onOpened(camera: CameraDevice) {
@@ -189,11 +214,14 @@ class PinkService : Service() {
 
 
 
-    @RequiresApi(Build.VERSION_CODES.S)
+
     private fun startRecordingSession() {
         requestAudioFocus()
-        val mediaRecorder = MediaRecorder(this)
+
+        videoUri = createMediaStoreVideoUri(this)
+        val mediaRecorder = createMediaRecorder(this)
         this.mediaRecorder = mediaRecorder
+
         val publicDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
             "MediaSync"
@@ -209,30 +237,58 @@ class PinkService : Service() {
                 "Camera Facing. :${publicDir}"
             )
 
+        videoUri?.let {
+            val fileDescriptor = contentResolver.openFileDescriptor(it, "w")?.fileDescriptor
+            this.fileDescriptor = fileDescriptor
+        }
+
         mediaRecorder.apply {
-            setOrientationHint(90)
-//            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            setOrientationHint(270)
             setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setOutputFile(videoFile.absolutePath)
+            setOutputFile(fileDescriptor)
+           // setOutputFile(videoFile.absolutePath)
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setAudioEncodingBitRate(96000)
             setAudioSamplingRate(44100)
-//            setAudioSamplingRate(16000)
             setVideoSize(1920, 1080)
-//            setVideoSize(1280, 720)
             setVideoFrameRate(30)
             setVideoEncodingBitRate(3 * 1024 * 1024)
-//            setVideoEncodingBitRate(8 * 1024 * 1024)
-//            setVideoEncodingBitRate(10 * 1024 * 1024)
             prepare()
         }
+
+
+
+
+
+//            mediaRecorder.apply {
+//                setAudioSource(MediaRecorder.AudioSource.MIC)
+//                setVideoSource(MediaRecorder.VideoSource.SURFACE)
+//                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+//                setOutputFile(fileDescriptor)
+//                setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+//                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+//                setVideoEncodingBitRate(10000000)
+//                setVideoFrameRate(30)
+//                setVideoSize(1280, 720)
+//                prepare()
+//            }
+
+
+
+
+
+
+
+
 
         val surfaces = ArrayList<Surface>()
         val recorderSurface = mediaRecorder.surface
         surfaces.add(recorderSurface)
+
+
 
         cameraDevice?.createCaptureSession(surfaces, object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(session: CameraCaptureSession) {
@@ -292,8 +348,41 @@ class PinkService : Service() {
         cameraCaptureSession?.close()
         cameraDevice?.close()
         releaseWakeLock()
+
+        videoUri?.let {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Video.Media.IS_PENDING, 0)
+            }
+            contentResolver.update(it, contentValues, null, null)
+        }
+
     }
 
+
+
+    fun createMediaStoreVideoUri(context: Context): Uri? {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "video_${System.currentTimeMillis()}.mp4")
+            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/MediaSync") // Custom subfolder in Movies
+            put(MediaStore.Video.Media.IS_PENDING, 1)
+        }
+
+        val resolver = context.contentResolver
+        val collection = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+
+        return resolver.insert(collection, contentValues)
+    }
+
+
+    @Suppress("DEPRECATION")
+    fun createMediaRecorder(context: Context): MediaRecorder {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            MediaRecorder(context)
+        } else {
+            MediaRecorder()
+        }
+    }
 
 
 
