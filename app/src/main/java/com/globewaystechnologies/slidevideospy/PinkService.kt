@@ -155,8 +155,8 @@ class PinkService : Service() {
         super.onCreate()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         acquireWakeLock()
-        addOverlayWithCloseButton()
-        startOverlayView()
+        // addOverlayWithCloseButton()
+//        startOverlayView()
 
         Log.d("PinkService", "On Create Services" )
 
@@ -305,9 +305,9 @@ class PinkService : Service() {
 
         val surfaces = ArrayList<Surface>()
         val recorderSurface = mediaRecorder.surface
-        val previewSurface = surfaceView.holder.surface
+//        val previewSurface = surfaceView.holder.surface
         surfaces.add(recorderSurface)
-        surfaces.add(previewSurface)
+//        surfaces.add(previewSurface)
 
 
 
@@ -316,7 +316,7 @@ class PinkService : Service() {
                 cameraCaptureSession = session
                 val captureRequest = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
                     addTarget(recorderSurface)
-                    addTarget(previewSurface)
+//                    addTarget(previewSurface)
                 }
                 session.setRepeatingRequest(captureRequest.build(), null, null)
                 mediaRecorder.start()
@@ -378,7 +378,7 @@ class PinkService : Service() {
             contentResolver.update(it, contentValues, null, null)
         }
 
-        stopOverlayView()
+//        stopOverlayView()
 
     }
 
