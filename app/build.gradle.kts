@@ -77,4 +77,6 @@ dependencies {
     // If you want to additionally use the CameraX Extensions library
     implementation("androidx.camera:camera-extensions:${camerax_version}")
 
+    implementation("com.android.billingclient:billing:7.0.0")
+
 }
