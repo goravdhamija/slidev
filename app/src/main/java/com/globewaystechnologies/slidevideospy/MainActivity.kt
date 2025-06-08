@@ -61,6 +61,22 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat.getSystemService
 
 
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavHostController
+import com.globewaystechnologies.slidevideospy.screens.Contacts
+import com.globewaystechnologies.slidevideospy.screens.Favorites
+import com.globewaystechnologies.slidevideospy.screens.Home
+
+import androidx.compose.material3.*
+import androidx.compose.runtime.getValue
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+
+
 class MainActivity : ComponentActivity() {
 
 
@@ -75,14 +91,14 @@ class MainActivity : ComponentActivity() {
             val binder = service as PinkService.PinkServiceBinder
             mService = binder.getService()
             mBound = true
-            Log.d("PinkService", "On Service Connected" )
+            Log.d("PinkService", "On Service Connected")
 
 
         }
 
         override fun onServiceDisconnected(arg0: ComponentName) {
             mBound = false
-            Log.d("PinkService", "On Service Disconnected" )
+            Log.d("PinkService", "On Service Disconnected")
         }
     }
 
@@ -90,17 +106,17 @@ class MainActivity : ComponentActivity() {
         super.onStart()
 
 
-      /* var serviceIntent = Intent(this, PinkService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-        }*/
+        /* var serviceIntent = Intent(this, PinkService::class.java).also { intent ->
+              bindService(intent, connection, Context.BIND_AUTO_CREATE)
+          }*/
 
-      //  startForegroundService(serviceIntent)
+        //  startForegroundService(serviceIntent)
     }
 
     override fun onStop() {
         super.onStop()
-       /* unbindService(connection)
-        mBound = false*/
+        /* unbindService(connection)
+         mBound = false*/
     }
 
 
@@ -123,107 +139,131 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             SlideVideoSPYTheme {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = 20.dp, top = 90.dp, end = 20.dp, bottom = 20.dp),
-                    contentAlignment = Alignment.TopStart
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        FilledButtonStartForground {
-
-                            Toast.makeText(this@MainActivity, "Supports Concurent Camera ${supportsConcurrentRecording(cameraManager)}", Toast.LENGTH_LONG).show()
-                            if (supportsConcurrentRecording(cameraManager)) {
-                                Log.d(
-                                    "PinkServiceCameraPairs",
-                                    "${getConcurrentCameraPairs(cameraManager)}"
-                                )
-                            }
-                           //
-
-                            startForegroundService(serviceIntent)
-//                            startForegroundService(serviceSecondCameraIntent)
-//                            startForegroundService(serviceThirdCameraIntent)
-//                            startForegroundService(serviceFourthCameraIntent)
 
 
-                        }
-
-                        FilledButtonStopForground {
-
-                            stopService(serviceIntent)
-//                            stopService(serviceSecondCameraIntent)
-//                            stopService(serviceThirdCameraIntent)
-//                            stopService(serviceFourthCameraIntent)
-
-                        }
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(20.dp)
-                        ) {
-
-                            items(cameraIdList) { item ->
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                                            modifier = Modifier
-                                            .size(width = 150.dp, height = 540.dp)
-                                    .border(1.dp, Color.Magenta)
-                                ) {
-                                    Text(
-                                        text = "Camera No. :$item ",
-
-                                    )
-                                    Surface(
-                                        modifier = Modifier
-                                            .size(width = 145.dp, height = 200.dp)
-                                            .border(1.dp, Color.Cyan)
-                                    ) {
-
-                                    }
-
-                                    var charactersticsCamera = cameraManager.getCameraCharacteristics(item)
-                                    var previewSize = charactersticsCamera.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!.getOutputSizes(ImageFormat.JPEG).maxByOrNull { it.height * it.width }!!
-
-
-                                    Text(
-                                        text = "Camera Facing. :${charactersticsCamera.get(CameraCharacteristics.LENS_FACING)} "
-                                        )
-                                    Text(
-                                        text = "Camera FlashInfo. :${charactersticsCamera.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)} "
-                                    )
-                                    Text(
-                                        text = "Camera Facing Front. :${CameraCharacteristics.LENS_FACING_FRONT} "
-                                    )
-                                    Text(
-                                        text = "Camera Preview Size. : WIDTH- ${previewSize.width} by HEIGHT- ${ previewSize.height} "
-                                    )
-
-
-                                }
-                            }
-                        }
-
-
-
-
-                    }
-                }
+                MainScreen(modifier = Modifier)
+//
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .padding(start = 20.dp, top = 90.dp, end = 20.dp, bottom = 20.dp),
+//                    contentAlignment = Alignment.TopStart
+//                ) {
+//                    Column(
+//                        verticalArrangement = Arrangement.spacedBy(20.dp)
+//                    ) {
+//                        FilledButtonStartForground {
+//
+//                            Toast.makeText(
+//                                this@MainActivity,
+//                                "Supports Concurent Camera ${
+//                                    supportsConcurrentRecording(cameraManager)
+//                                }",
+//                                Toast.LENGTH_LONG
+//                            ).show()
+//                            if (supportsConcurrentRecording(cameraManager)) {
+//                                Log.d(
+//                                    "PinkServiceCameraPairs",
+//                                    "${getConcurrentCameraPairs(cameraManager)}"
+//                                )
+//                            }
+//                            //
+//
+//                            startForegroundService(serviceIntent)
+////                            startForegroundService(serviceSecondCameraIntent)
+////                            startForegroundService(serviceThirdCameraIntent)
+////                            startForegroundService(serviceFourthCameraIntent)
+//
+//
+//                        }
+//
+//                        FilledButtonStopForground {
+//
+//                            stopService(serviceIntent)
+////                            stopService(serviceSecondCameraIntent)
+////                            stopService(serviceThirdCameraIntent)
+////                            stopService(serviceFourthCameraIntent)
+//
+//                        }
+//
+//                        LazyRow(
+//                            horizontalArrangement = Arrangement.spacedBy(20.dp)
+//                        ) {
+//
+//                            items(cameraIdList) { item ->
+//                                Column(
+//                                    horizontalAlignment = Alignment.CenterHorizontally,
+//                                    verticalArrangement = Arrangement.spacedBy(20.dp),
+//                                    modifier = Modifier
+//                                        .size(width = 150.dp, height = 540.dp)
+//                                        .border(1.dp, Color.Magenta)
+//                                ) {
+//                                    Text(
+//                                        text = "Camera No. :$item ",
+//
+//                                        )
+//                                    Surface(
+//                                        modifier = Modifier
+//                                            .size(width = 145.dp, height = 200.dp)
+//                                            .border(1.dp, Color.Cyan)
+//                                    ) {
+//
+//                                    }
+//
+//                                    var charactersticsCamera =
+//                                        cameraManager.getCameraCharacteristics(item)
+//                                    var previewSize =
+//                                        charactersticsCamera.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!
+//                                            .getOutputSizes(ImageFormat.JPEG)
+//                                            .maxByOrNull { it.height * it.width }!!
+//
+//
+//                                    Text(
+//                                        text = "Camera Facing. :${
+//                                            charactersticsCamera.get(
+//                                                CameraCharacteristics.LENS_FACING
+//                                            )
+//                                        } "
+//                                    )
+//                                    Text(
+//                                        text = "Camera FlashInfo. :${
+//                                            charactersticsCamera.get(
+//                                                CameraCharacteristics.FLASH_INFO_AVAILABLE
+//                                            )
+//                                        } "
+//                                    )
+//                                    Text(
+//                                        text = "Camera Facing Front. :${CameraCharacteristics.LENS_FACING_FRONT} "
+//                                    )
+//                                    Text(
+//                                        text = "Camera Preview Size. : WIDTH- ${previewSize.width} by HEIGHT- ${previewSize.height} "
+//                                    )
+//
+//
+//                                }
+//                            }
+//                        }
+//
+//
+//                    }
+//                }
             }
         }
 
-        ActivityCompat.requestPermissions(this,
-            arrayOf(Manifest.permission.POST_NOTIFICATIONS,
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+                Manifest.permission.POST_NOTIFICATIONS,
                 Manifest.permission.FOREGROUND_SERVICE_CAMERA,
                 Manifest.permission.CAMERA,
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE,
                 Manifest.permission.RECORD_AUDIO,
                 Manifest.permission.FOREGROUND_SERVICE,
                 Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION,
-                Manifest.permission.ACCESS_FINE_LOCATION),
-            200)
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ),
+            200
+        )
 
         if (!Settings.canDrawOverlays(this)) {
             val intent = Intent(
@@ -237,22 +277,21 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
 }
 
 
-fun supportsConcurrentRecording(cameraManager: CameraManager): Boolean {
+public fun supportsConcurrentRecording(cameraManager: CameraManager): Boolean {
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
             cameraManager.concurrentCameraIds.isNotEmpty()
 }
 
 @RequiresApi(Build.VERSION_CODES.R)
-fun getConcurrentCameraPairs(cameraManager: CameraManager): List<Set<String>> {
+public fun getConcurrentCameraPairs(cameraManager: CameraManager): List<Set<String>> {
     return cameraManager.concurrentCameraIds.toList()
 }
 
 @Composable
-fun FilledButtonStartForground(onClick: () -> Unit) {
+public fun FilledButtonStartForground(onClick: () -> Unit) {
 
     Button(onClick = { onClick() }) {
         Text("Start Foreground Services With Notification")
@@ -260,18 +299,99 @@ fun FilledButtonStartForground(onClick: () -> Unit) {
 }
 
 @Composable
-fun FilledButtonStopForground(onClick: () -> Unit) {
+public fun FilledButtonStopForground(onClick: () -> Unit) {
     Button(
         onClick = { onClick() },
-        colors = ButtonDefaults.buttonColors(containerColor = Color.Red,
-            contentColor = Color.Black)
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Red,
+            contentColor = Color.Black
+        )
     ) {
         Text("Stop Foreground Services With Notification Removal")
     }
 }
 
 
+sealed class NavRoutes(val route: String) {
+    object Home : NavRoutes("home")
+    object Contacts : NavRoutes("contacts")
+    object Favorites : NavRoutes("favorites")
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+public fun MainScreen(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = {
+                Text("Bottom Navigation Demo")
+            })
+        },
+        content = { padding ->
+            Column(Modifier.padding(padding)) {
+                NavigationHost(navController = navController)
+            }
+        },
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
+        }
+    )
+
+}
+
+
+@Composable
+public fun NavigationHost(navController: NavHostController) {
+    NavHost(
+        navController = navController,
+        startDestination = NavRoutes.Home.route,
+    ) {
+        composable(NavRoutes.Home.route) {
+            Home()
+        }
+        composable(NavRoutes.Contacts.route) {
+            Contacts()
+        }
+        composable(NavRoutes.Favorites.route) {
+            Favorites()
+        }
+    }
+}
+
+
+@Composable
+public fun BottomNavigationBar(navController: NavHostController) {
+    NavigationBar {
+        val backStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = backStackEntry?.destination?.route
+        NavBarItems.BarItems.forEach { navItem ->
+            NavigationBarItem(
+                selected = currentRoute == navItem.route,
+                onClick = {
+                    navController.navigate(navItem.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                icon = {
+                    Icon(
+                        imageVector = navItem.image,
+                        contentDescription = navItem.title
+                    )
+                },
+                label = {
+                    Text(text = navItem.title)
+                },
+            )
+        }
+
+    }
+}
 
 
 
