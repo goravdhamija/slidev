@@ -77,4 +77,12 @@ dependencies {
     // If you want to additionally use the CameraX Extensions library
     implementation("androidx.camera:camera-extensions:${camerax_version}")
 
+    implementation("com.android.billingclient:billing:7.0.0")
+
+    val nav_version = "2.9.0"
+
+    implementation("androidx.navigation:navigation-compose:$nav_version")
+
+    implementation("androidx.compose.material:material:1.8.2")
+
 }

