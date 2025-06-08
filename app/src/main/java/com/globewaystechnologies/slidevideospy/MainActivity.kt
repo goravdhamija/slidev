@@ -321,6 +321,7 @@ sealed class NavRoutes(val route: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun MainScreen(modifier: Modifier = Modifier) {
+
     val navController = rememberNavController()
 
     Scaffold(
