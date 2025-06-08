@@ -63,28 +63,27 @@ dependencies {
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:x.x.x")
 
     val camerax_version = "1.5.0-beta01"
-    // The following line is optional, as the core library is included indirectly by camera-camera2
     implementation("androidx.camera:camera-core:${camerax_version}")
     implementation("androidx.camera:camera-camera2:${camerax_version}")
-    // If you want to additionally use the CameraX Lifecycle library
     implementation("androidx.camera:camera-lifecycle:${camerax_version}")
-    // If you want to additionally use the CameraX VideoCapture library
     implementation("androidx.camera:camera-video:${camerax_version}")
-    // If you want to additionally use the CameraX View class
     implementation("androidx.camera:camera-view:${camerax_version}")
-    // If you want to additionally add CameraX ML Kit Vision Integration
     implementation("androidx.camera:camera-mlkit-vision:${camerax_version}")
-    // If you want to additionally use the CameraX Extensions library
     implementation("androidx.camera:camera-extensions:${camerax_version}")
-
     implementation("com.android.billingclient:billing:7.0.0")
 
     val nav_version = "2.9.0"
-
     implementation("androidx.navigation:navigation-compose:$nav_version")
-
     implementation("androidx.compose.material:material:1.8.2")
-
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("androidx.datastore:datastore-preferences-rxjava2:1.1.7")
+    implementation("androidx.datastore:datastore-preferences-rxjava3:1.1.7")
+    implementation("androidx.datastore:datastore-preferences-core:1.1.7")
+    implementation("androidx.datastore:datastore:1.1.7")
+    implementation("androidx.datastore:datastore-rxjava2:1.1.7")
+    implementation("androidx.datastore:datastore-rxjava3:1.1.7")
+    implementation("androidx.datastore:datastore-core:1.1.7")
 
 }
