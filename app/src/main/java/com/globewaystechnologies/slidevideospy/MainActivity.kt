@@ -44,6 +44,14 @@ import com.globewaystechnologies.slidevideospy.screens.Contacts
 import com.globewaystechnologies.slidevideospy.screens.Favorites
 import com.globewaystechnologies.slidevideospy.screens.Home
 import com.globewaystechnologies.slidevideospy.ui.theme.SlideVideoSPYTheme
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
+
+import kotlinx.coroutines.flow.map
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings") // "settings" is the filename
 
 
 class MainActivity : ComponentActivity() {
@@ -70,6 +78,29 @@ class MainActivity : ComponentActivity() {
             Log.d("PinkService", "On Service Disconnected")
         }
     }
+
+
+    suspend fun saveSomeSetting(key: Preferences.Key<String>, value: String) {
+        dataStore.edit { settings ->
+            settings[key] = value
+        }
+    }
+
+    fun readSomeSetting(key: Preferences.Key<String>) {
+       dataStore
+           .data
+           .map {
+        preferences ->
+        preferences[key] ?: "default_value"
+    }
+}
+
+    fun readSomeSettingEquals(key: Preferences.Key<String>) = dataStore.data
+            .map {
+                    preferences ->
+                preferences[key] ?: "default_value"
+            }
+
 
     override fun onStart() {
         super.onStart()
@@ -102,7 +133,8 @@ class MainActivity : ComponentActivity() {
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val cameraIdList = cameraManager.cameraIdList
 
-        var sharedPreferences: SharedPreferences = getSharedPreferences("OmniPreferences", MODE_PRIVATE)
+        var sharedPreferences: SharedPreferences =
+            getSharedPreferences("OmniPreferences", MODE_PRIVATE)
         val savedName = sharedPreferences.getString("user_name", "")!!
         val savedAge = sharedPreferences.getInt("user_age", 0)
 
