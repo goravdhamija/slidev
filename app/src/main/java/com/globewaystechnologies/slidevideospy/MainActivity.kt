@@ -1,80 +1,57 @@
 package com.globewaystechnologies.slidevideospy
 
+
 import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.graphics.ImageFormat
-import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraDevice
+import android.content.SharedPreferences
+import android.hardware.camera2.CameraManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Settings
 import android.util.Log
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.widget.ImageView.ScaleType
-import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
-import androidx.camera.view.LifecycleCameraController
-import androidx.camera.view.PreviewView
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.globewaystechnologies.slidevideospy.ui.theme.SlideVideoSPYTheme
-import android.hardware.camera2.CameraManager
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Surface
-
-import android.os.Handler
-import android.os.HandlerThread
-import android.hardware.camera2.CameraAccessException
-import android.net.Uri
-import android.os.PowerManager
-import android.provider.Settings
-import android.widget.Toast
-import androidx.core.content.ContextCompat.getSystemService
-
-
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavHostController
 import com.globewaystechnologies.slidevideospy.screens.Contacts
 import com.globewaystechnologies.slidevideospy.screens.Favorites
 import com.globewaystechnologies.slidevideospy.screens.Home
+import com.globewaystechnologies.slidevideospy.ui.theme.SlideVideoSPYTheme
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 
-import androidx.compose.material3.*
-import androidx.compose.runtime.getValue
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
+import kotlinx.coroutines.flow.map
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings") // "settings" is the filename
 
 
 class MainActivity : ComponentActivity() {
@@ -101,6 +78,29 @@ class MainActivity : ComponentActivity() {
             Log.d("PinkService", "On Service Disconnected")
         }
     }
+
+
+    suspend fun saveSomeSetting(key: Preferences.Key<String>, value: String) {
+        dataStore.edit { settings ->
+            settings[key] = value
+        }
+    }
+
+    fun readSomeSetting(key: Preferences.Key<String>) {
+       dataStore
+           .data
+           .map {
+        preferences ->
+        preferences[key] ?: "default_value"
+    }
+}
+
+    fun readSomeSettingEquals(key: Preferences.Key<String>) = dataStore.data
+            .map {
+                    preferences ->
+                preferences[key] ?: "default_value"
+            }
+
 
     override fun onStart() {
         super.onStart()
@@ -133,6 +133,10 @@ class MainActivity : ComponentActivity() {
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val cameraIdList = cameraManager.cameraIdList
 
+        var sharedPreferences: SharedPreferences =
+            getSharedPreferences("OmniPreferences", MODE_PRIVATE)
+        val savedName = sharedPreferences.getString("user_name", "")!!
+        val savedAge = sharedPreferences.getInt("user_age", 0)
 
 
         enableEdgeToEdge()
@@ -321,6 +325,7 @@ sealed class NavRoutes(val route: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 public fun MainScreen(modifier: Modifier = Modifier) {
+
     val navController = rememberNavController()
 
     Scaffold(
