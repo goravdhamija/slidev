@@ -1,4 +1,4 @@
-package com.globewaystechnologies.slidevideospy
+package com.globewaystechnologies.slidevideospy.services
 
 
 import android.Manifest
@@ -10,26 +10,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Random
-import kotlin.concurrent.thread
 import android.hardware.camera2.CameraManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -38,12 +26,11 @@ import android.media.MediaRecorder
 import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import android.os.PowerManager
 import android.view.Surface
-import android.view.TextureView
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import com.globewaystechnologies.slidevideospy.R
 import java.io.File
 
 class FourthCameraServices : Service() {

