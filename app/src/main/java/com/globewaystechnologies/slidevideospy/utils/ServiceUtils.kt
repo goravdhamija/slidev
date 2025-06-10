@@ -2,10 +2,8 @@ package com.globewaystechnologies.slidevideospy.utils
 
 import android.content.Context
 import android.content.Intent
-import com.globewaystechnologies.slidevideospy.services.FourthCameraServices
-import com.globewaystechnologies.slidevideospy.services.PinkService
-import com.globewaystechnologies.slidevideospy.services.SecondCameraService
-import com.globewaystechnologies.slidevideospy.services.ThirdCameraService
+import com.globewaystechnologies.slidevideospy.services.*
+
 
 object ServiceUtils {
 
