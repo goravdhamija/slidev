@@ -75,7 +75,17 @@ dependencies {
     val nav_version = "2.9.0"
     implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation("androidx.compose.material:material:1.8.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation("androidx.compose.material3:material3:1.2.0")
+
+
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.8.2")
+    implementation("androidx.compose.ui:ui-graphics:1.8.2")
+
+
+
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0") //
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.8.2")
 
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.datastore:datastore-preferences-rxjava2:1.1.7")
@@ -85,5 +95,6 @@ dependencies {
     implementation("androidx.datastore:datastore-rxjava2:1.1.7")
     implementation("androidx.datastore:datastore-rxjava3:1.1.7")
     implementation("androidx.datastore:datastore-core:1.1.7")
+
 
 }
