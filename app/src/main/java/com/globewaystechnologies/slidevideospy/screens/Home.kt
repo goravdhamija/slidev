@@ -102,7 +102,7 @@ fun FilledButtonStopForground(onClick: () -> Unit) {
 @Preview(showBackground = true, name = "Greeting Preview")
 @Composable
 fun HomeScreenPreview() {
-        Home(sharedViewModel)
+//        Home(sharedViewModel)
 }
 
 
