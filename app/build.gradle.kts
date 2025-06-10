@@ -82,7 +82,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics:1.8.2")
 
 
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0") //
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.8.2")
 
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.datastore:datastore-preferences-rxjava2:1.1.7")
