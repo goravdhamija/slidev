@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -28,32 +31,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun Home(sharedViewModel: SharedViewModel) {
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+        val scrollStateW = rememberScrollState()
+
+
         val text by sharedViewModel.text.collectAsState()
         val context = LocalContext.current
         val serviceIntent = Intent(context.applicationContext, PinkService::class.java)
 
-//        Icon(
-//            imageVector = Icons.Filled.Home,
-//            contentDescription = "home",
-//            tint = Color.Blue,
-//            modifier = Modifier
-//                .size(150.dp)
-//                .align(Alignment.Center)
-//        )
 
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 20.dp, top = 90.dp, end = 20.dp, bottom = 20.dp),
-            contentAlignment = Alignment.TopStart
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
+            Column(modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+            .verticalScroll(scrollStateW), // Make Column scrollable
+            horizontalAlignment = Alignment.Start
+    ) {
                 FilledButtonStartForground {
 
 
@@ -74,10 +66,10 @@ fun Home(sharedViewModel: SharedViewModel) {
                 MyCameraAppWithViewModel()
 
             }
-        }
 
 
-    }
+
+
 
 }
 

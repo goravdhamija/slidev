@@ -5,6 +5,7 @@ import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.os.Build
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,9 @@ enum class CameraSelection {
 data class CameraSelectionUiState(
     val selectedOption: CameraSelection = CameraSelection.NONE,
     val frontCameraId: String? = null,
+    val frontCameraIds: List<Int> = emptyList(),
     val backCameraId: String? = null,
+    val backCameraIds: List<Int> = emptyList(),
     val concurrentCameraIdSets: Set<Set<String>> = emptySet(),
     val availableCameraIdsForSelection: List<String> = emptyList(), // IDs to use for opening camera
     val error: String? = null
@@ -51,27 +54,54 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             try {
                 var frontId: String? = null
+                var frontIds = mutableListOf<Int>()
                 var backId: String? = null
+                var backIds = mutableListOf<Int>()
                 val concurrentIds = mutableSetOf<Set<String>>()
 
                 cameraManager.cameraIdList.forEach { cameraId ->
                     val characteristics = cameraManager.getCameraCharacteristics(cameraId)
                     when (characteristics.get(CameraCharacteristics.LENS_FACING)) {
-                        CameraCharacteristics.LENS_FACING_FRONT -> frontId = cameraId
-                        CameraCharacteristics.LENS_FACING_BACK -> backId = cameraId
+                        CameraCharacteristics.LENS_FACING_FRONT -> {
+                            frontId = cameraId
+
+                            frontIds.add(cameraId.toIntOrNull() ?: -1) // Convert to Int, handle nulls
+
+                        }
+                        CameraCharacteristics.LENS_FACING_BACK -> {
+                            backId = cameraId
+
+                            backIds.add(cameraId.toIntOrNull() ?: -1)
+
+                        }
                         else -> { /* Handle external or unknown cameras if needed */
                         }
                     }
                 }
 
+                Log.d("Concurent Cameras", "frontids: ${frontIds}" )
+                Log.d("Concurent Cameras", "backIds: ${backIds}" )
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     concurrentIds.addAll(cameraManager.concurrentCameraIds)
                 }
 
+                Log.d("Concurent Cameras", "${concurrentIds}" )
+
+
+//                for (pair in concurrentIds) {
+//                    Log.d("Concurent Cameras", "$pair" )
+//                    for (cameraId in pair) {
+//                        println(" Concurent Cameras - Camera ID: $cameraId")
+//                    }
+//                }
+
                 _uiState.update {
                     it.copy(
                         frontCameraId = frontId,
+                        frontCameraIds = frontIds,
                         backCameraId = backId,
+                        backCameraIds = backIds,
                         concurrentCameraIdSets = concurrentIds,
                         error = null // Clear any previous error
                     )
