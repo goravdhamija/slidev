@@ -1,4 +1,4 @@
-package com.globewaystechnologies.slidevideospy
+package com.globewaystechnologies.slidevideospy.services
 
 
 import android.Manifest
@@ -12,26 +12,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
-import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Random
-import kotlin.concurrent.thread
 import android.hardware.camera2.CameraManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -41,37 +30,21 @@ import android.net.Uri
 import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
-import android.os.ParcelFileDescriptor
 import android.os.PowerManager
 import android.provider.MediaStore
 import android.view.Surface
-import android.view.SurfaceHolder
 import android.view.SurfaceView
-import android.view.TextureView
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.io.File
 import java.io.FileDescriptor
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
-import java.text.SimpleDateFormat
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.FloatBuffer
-import android.opengl.GLES20
-import android.opengl.GLSurfaceView
-import android.os.*
-import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
-import com.globewaystechnologies.slidevideospy.databinding.OverlayViewBinding
-import java.util.Date
-import java.util.Locale
+import com.globewaystechnologies.slidevideospy.R
 
 
 class PinkService : Service() {

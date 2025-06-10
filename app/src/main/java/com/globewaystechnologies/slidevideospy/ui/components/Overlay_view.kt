@@ -1,4 +1,4 @@
-package com.globewaystechnologies.slidevideospy
+package com.globewaystechnologies.slidevideospy.ui.components
 
 import android.content.Context
 import android.graphics.Canvas
@@ -8,6 +8,7 @@ import android.graphics.drawable.Drawable
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import com.globewaystechnologies.slidevideospy.R
 
 /**
  * TODO: document your custom view class.

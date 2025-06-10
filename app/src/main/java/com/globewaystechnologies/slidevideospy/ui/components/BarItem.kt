@@ -1,4 +1,4 @@
-package com.globewaystechnologies.slidevideospy
+package com.globewaystechnologies.slidevideospy.ui.components
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
