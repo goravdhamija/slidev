@@ -7,17 +7,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.globewaystechnologies.slidevideospy.ui.components.BottomNavigationBar
 import com.globewaystechnologies.slidevideospy.ui.components.NavigationHost
-import com.globewaystechnologies.slidevideospy.ui.theme.SlideVideoSPYTheme
+import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun MainScreen(modifier: Modifier = Modifier) {
+public fun MainScreen(modifier: Modifier = Modifier,sharedViewModel: SharedViewModel) {
 
+    val text by sharedViewModel.text.collectAsState()
     val navController = rememberNavController()
 
     Scaffold(
@@ -28,7 +32,7 @@ public fun MainScreen(modifier: Modifier = Modifier) {
         },
         content = { padding ->
             Column(Modifier.padding(padding)) {
-                NavigationHost(navController = navController)
+                NavigationHost(navController = navController, sharedViewModel = sharedViewModel)
             }
         },
         bottomBar = {
@@ -41,7 +45,9 @@ public fun MainScreen(modifier: Modifier = Modifier) {
 @Preview(showBackground = true, name = "Greeting Preview")
 @Composable
 fun MainActivityPreview() {
-
-        MainScreen(modifier = Modifier)
+    val fakeViewModel = object : SharedViewModel() {
+        override val text = MutableStateFlow("Preview Text")
+    }
+        MainScreen(modifier = Modifier,fakeViewModel)
 
 }
