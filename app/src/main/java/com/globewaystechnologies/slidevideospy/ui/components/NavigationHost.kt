@@ -6,7 +6,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.globewaystechnologies.slidevideospy.screens.Contacts
 import com.globewaystechnologies.slidevideospy.screens.Favorites
+import com.globewaystechnologies.slidevideospy.screens.Gallery
 import com.globewaystechnologies.slidevideospy.screens.Home
+import com.globewaystechnologies.slidevideospy.screens.Settings
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 
@@ -27,10 +29,10 @@ public fun NavigationHost(navController: NavHostController, sharedViewModel: Sha
             Home(sharedViewModel)
         }
         composable(NavRoutes.Gallery.route) {
-            Contacts(sharedViewModel)
+            Gallery(sharedViewModel)
         }
         composable(NavRoutes.Settings.route) {
-            Favorites(sharedViewModel)
+            Settings(sharedViewModel)
         }
     }
 }
