@@ -16,33 +16,22 @@ import kotlinx.coroutines.launch
 
 // CameraViewModel.kt
 // Enum for camera selection options (can be in the same file or a separate one)
-enum class CameraSelection {
-    FRONT, BACK, BOTH, NONE // Added NONE for initial state
-}
+
 
 // Data class to hold the state of camera selection and available cameras
 data class CameraSelectionUiState(
-    val selectedOption: CameraSelection = CameraSelection.NONE,
-    val frontCameraId: String? = null,
-    val frontCameraIds: List<Int> = emptyList(),
-    val backCameraId: String? = null,
-    val backCameraIds: List<Int> = emptyList(),
-    val concurrentCameraIdSets: Set<Set<String>> = emptySet(),
-    val availableCameraIdsForSelection: List<String> = emptyList(), // IDs to use for opening camera
+
+    val allCameraGroupsForSelection: Set<Set<Any>> = emptySet(), // IDs to use for opening camera
+    val selectedCameraGroup: Set<Any> = emptySet(),
+
     val error: String? = null
 ) {
-    val canStreamConcurrently: Boolean
-        get() = concurrentCameraIdSets.any { set ->
-            frontCameraId != null && backCameraId != null &&
-                    set.contains(frontCameraId) && set.contains(backCameraId)
-        }
+
 }
 
 class CameraViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val cameraManager =
-        application.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-
+    private val cameraManager = application.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val _uiState = MutableStateFlow(CameraSelectionUiState())
     val uiState: StateFlow<CameraSelectionUiState> = _uiState.asStateFlow()
 
@@ -53,25 +42,28 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private fun loadCameraDetails() {
         viewModelScope.launch {
             try {
-                var frontId: String? = null
-                var frontIds = mutableListOf<Int>()
-                var backId: String? = null
-                var backIds = mutableListOf<Int>()
-                val concurrentIds = mutableSetOf<Set<String>>()
+                val allSelectableCameraItems = mutableMapOf<Int,Set<String>>()
+                val allSelectableCameraItemsSets = mutableSetOf<Set<Any>>()
 
                 cameraManager.cameraIdList.forEach { cameraId ->
                     val characteristics = cameraManager.getCameraCharacteristics(cameraId)
                     when (characteristics.get(CameraCharacteristics.LENS_FACING)) {
                         CameraCharacteristics.LENS_FACING_FRONT -> {
-                            frontId = cameraId
 
-                            frontIds.add(cameraId.toIntOrNull() ?: -1) // Convert to Int, handle nulls
-
+                            var setTemp = mutableSetOf<Any>()
+                            setTemp.add("single")
+                            setTemp.add(CameraCharacteristics.LENS_FACING_FRONT)
+                            setTemp.add(cameraId)
+                            allSelectableCameraItemsSets.add(setTemp)
                         }
                         CameraCharacteristics.LENS_FACING_BACK -> {
-                            backId = cameraId
 
-                            backIds.add(cameraId.toIntOrNull() ?: -1)
+
+                            var setTemp = mutableSetOf<Any>()
+                            setTemp.add("single")
+                            setTemp.add(CameraCharacteristics.LENS_FACING_BACK)
+                            setTemp.add(cameraId)
+                            allSelectableCameraItemsSets.add(setTemp)
 
                         }
                         else -> { /* Handle external or unknown cameras if needed */
@@ -79,33 +71,31 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 }
 
-                Log.d("Concurent Cameras", "frontids: ${frontIds}" )
-                Log.d("Concurent Cameras", "backIds: ${backIds}" )
+
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    concurrentIds.addAll(cameraManager.concurrentCameraIds)
+
+                    cameraManager.concurrentCameraIds.forEach { cameraIds ->
+                        var setTemp = mutableSetOf<Any>()
+                        setTemp.add("double")
+                        setTemp.add(2)
+                        setTemp.add(cameraIds)
+                        allSelectableCameraItemsSets.add(setTemp)
+                    }
                 }
 
-                Log.d("Concurent Cameras", "${concurrentIds}" )
+                Log.d("Concurent Cameras all", "${allSelectableCameraItemsSets}" )
 
-
-//                for (pair in concurrentIds) {
-//                    Log.d("Concurent Cameras", "$pair" )
-//                    for (cameraId in pair) {
-//                        println(" Concurent Cameras - Camera ID: $cameraId")
-//                    }
-//                }
 
                 _uiState.update {
                     it.copy(
-                        frontCameraId = frontId,
-                        frontCameraIds = frontIds,
-                        backCameraId = backId,
-                        backCameraIds = backIds,
-                        concurrentCameraIdSets = concurrentIds,
+
+                        allCameraGroupsForSelection = allSelectableCameraItemsSets,
                         error = null // Clear any previous error
                     )
                 }
+
+
             } catch (e: Exception) { // Catching generic Exception for brevity, be more specific
                 _uiState.update {
                     it.copy(error = "Failed to load camera details: ${e.message}")
@@ -116,25 +106,14 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun selectCamera(selection: CameraSelection) {
-        _uiState.update { currentState ->
-            val idsToUse = when (selection) {
-                CameraSelection.FRONT -> listOfNotNull(currentState.frontCameraId)
-                CameraSelection.BACK -> listOfNotNull(currentState.backCameraId)
-                CameraSelection.BOTH -> {
-                    if (currentState.canStreamConcurrently && currentState.frontCameraId != null && currentState.backCameraId != null) {
-                        listOfNotNull(currentState.frontCameraId, currentState.backCameraId)
-                    } else {
-                        // Fallback or error: cannot select BOTH if not supported or cameras missing
-                        currentState.availableCameraIdsForSelection // or emptyList()
-                    }
-                }
 
-                CameraSelection.NONE -> emptyList()
-            }
+
+    fun selectedCameraGroupFun(selection: Set<Any>) {
+        _uiState.update { currentState ->
+
             currentState.copy(
-                selectedOption = selection,
-                availableCameraIdsForSelection = idsToUse
+                selectedCameraGroup = selection,
+
             )
         }
     }
