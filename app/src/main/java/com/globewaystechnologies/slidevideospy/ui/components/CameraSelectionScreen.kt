@@ -74,7 +74,7 @@ fun CameraSelectionScreen(
                         .padding(horizontal = 16.dp)
                 ) {
                     RadioButton(
-                        selected = (uiState.selectedCameraGroup == cameraGroup),
+                        selected = (uiState.selectedCameraGroup == cameraGroup.toString()),
                         onClick = null
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -105,6 +105,7 @@ fun MyCameraAppWithViewModel() {
         CameraSelectionScreen(
             cameraViewModel = cameraViewModel // Pass the ViewModel instance
         ) { selectedIds ->
+//            val serializedCameraDataSelected = selectedIds.joinToString(separator = ",")
 
             println("Camera IDs selected in Composable: $selectedIds")
         }
@@ -112,7 +113,7 @@ fun MyCameraAppWithViewModel() {
         if (cameraUiState.selectedCameraGroup.isNotEmpty()) {
             Text(
                 "ViewModel says: Selected ${cameraUiState.selectedCameraGroup} " +
-                        "with IDs: ${cameraUiState.selectedCameraGroup.joinToString()}",
+                        "with IDs: ${cameraUiState.selectedCameraGroup}",
                 modifier = Modifier.padding(16.dp)
             )
 

@@ -2,6 +2,7 @@ package com.globewaystechnologies.slidevideospy.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,7 +18,9 @@ import com.globewaystechnologies.slidevideospy.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BrandedTopAppBar(titleText: String = "Omni Vision") {
+fun BrandedTopAppBar(titleText: String = "Omni Vision",
+                     isServiceRunning: Boolean,
+                     onStartStopServiceClick: () -> Unit) {
     TopAppBar(
         title = {
             Row(
@@ -36,6 +39,25 @@ fun BrandedTopAppBar(titleText: String = "Omni Vision") {
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
+                )
+            }
+        },actions = {
+            Button(
+                onClick = onStartStopServiceClick,
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isServiceRunning) Color.Red else Color(0xFF00695C),
+                    contentColor = Color.White
+                ),
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .height(40.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+            ) {
+                Text(
+                    text = if (isServiceRunning) "STOP" else "START",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
             }
         },

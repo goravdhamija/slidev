@@ -97,6 +97,7 @@ dependencies {
     implementation("androidx.datastore:datastore-core:1.1.7")
 
     implementation("androidx.compose.material:material-icons-extended:1.6.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
 
 }

@@ -23,3 +23,15 @@ object ServiceUtils {
         return Intent(context, FourthCameraServices::class.java)
     }
 }
+
+
+fun isMyServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+    @Suppress("DEPRECATION")
+    for (service in activityManager.getRunningServices(Int.MAX_VALUE)) {
+        if (serviceClass.name == service.service.className) {
+            return true
+        }
+    }
+    return false
+}

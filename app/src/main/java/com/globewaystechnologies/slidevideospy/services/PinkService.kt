@@ -2,6 +2,7 @@ package com.globewaystechnologies.slidevideospy.services
 
 
 import android.Manifest
+import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -45,6 +46,12 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import com.globewaystechnologies.slidevideospy.R
+import com.globewaystechnologies.slidevideospy.data.SettingsRepository
+import com.globewaystechnologies.slidevideospy.dataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 
 class PinkService : Service() {
@@ -56,7 +63,8 @@ class PinkService : Service() {
     private lateinit var backgroundHandlerThread: HandlerThread
     private lateinit var backgroundHandler: Handler
     private lateinit var recordingSurface: Surface
-
+    private lateinit var settingsRepository: SettingsRepository
+    var mainCameraID:Int =  0
 
 
     private var cameraDevice: CameraDevice? = null
@@ -126,7 +134,20 @@ class PinkService : Service() {
     @RequiresPermission(Manifest.permission.CAMERA)
     override fun onCreate() {
         super.onCreate()
+        settingsRepository = SettingsRepository(applicationContext.dataStore)
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        CoroutineScope(Dispatchers.IO).launch {
+            settingsRepository.readSelectedCameraGroup().collect { savedGroup ->
+                if (savedGroup.isNotEmpty()) {
+                    val parts = savedGroup.split(",").map { it.trim() }
+                    val type = parts[0]     // "single"
+                    val val1 = parts[1]     // "0"
+                    val val2 = parts[2]     // "1"
+                    mainCameraID = val2.toInt()
+                }
+            }
+        }
+
         acquireWakeLock()
         // addOverlayWithCloseButton()
 //        startOverlayView()
@@ -183,25 +204,30 @@ class PinkService : Service() {
 
     @RequiresPermission(Manifest.permission.CAMERA)
     private fun startCameraAndRecord() {
-
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-//        cameraId = cameraManager.cameraIdList.first()
-        cameraId = cameraManager.cameraIdList[1]
-        cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
-            @RequiresApi(Build.VERSION_CODES.S)
-            override fun onOpened(camera: CameraDevice) {
-                cameraDevice = camera
-                startRecordingSession()
-            }
+                    cameraId = cameraManager.cameraIdList[mainCameraID]
+                    cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+                        @RequiresApi(Build.VERSION_CODES.S)
+                        override fun onOpened(camera: CameraDevice) {
+                            cameraDevice = camera
+                            startRecordingSession()
+                        }
 
-            override fun onDisconnected(camera: CameraDevice) {
-                camera.close()
-            }
+                        override fun onDisconnected(camera: CameraDevice) {
+                            camera.close()
+                        }
 
-            override fun onError(camera: CameraDevice, error: Int) {
-                camera.close()
-            }
-        }, null)
+                        override fun onError(camera: CameraDevice, error: Int) {
+                            camera.close()
+                        }
+                    }, null)
+
+
+
+
+
+
+
     }
 
 

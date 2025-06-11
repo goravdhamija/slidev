@@ -8,6 +8,8 @@ import android.os.Build
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.globewaystechnologies.slidevideospy.data.SettingsRepository
+import com.globewaystechnologies.slidevideospy.dataStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +24,7 @@ import kotlinx.coroutines.launch
 data class CameraSelectionUiState(
 
     val allCameraGroupsForSelection: Set<Set<Any>> = emptySet(), // IDs to use for opening camera
-    val selectedCameraGroup: Set<Any> = emptySet(),
+    val selectedCameraGroup: String = "", // Serialized string of selected camera group
 
     val error: String? = null
 ) {
@@ -42,7 +44,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private fun loadCameraDetails() {
         viewModelScope.launch {
             try {
-                val allSelectableCameraItems = mutableMapOf<Int,Set<String>>()
+
                 val allSelectableCameraItemsSets = mutableSetOf<Set<Any>>()
 
                 cameraManager.cameraIdList.forEach { cameraId ->
@@ -84,7 +86,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 }
 
-                Log.d("Concurent Cameras all", "${allSelectableCameraItemsSets}" )
+
 
 
                 _uiState.update {
@@ -93,6 +95,18 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                         allCameraGroupsForSelection = allSelectableCameraItemsSets,
                         error = null // Clear any previous error
                     )
+                }
+
+
+                val settingsRepository = SettingsRepository(getApplication<Application>().dataStore)
+                settingsRepository.readSelectedCameraGroup().collect { savedGroup ->
+                    if (savedGroup.isNotEmpty()) {
+
+                        _uiState.update {
+                            it.copy(selectedCameraGroup = "[${savedGroup}]")
+                        }
+//                        Log.d("Camera Group 1", "[${savedGroup}]" )
+                    }
                 }
 
 
@@ -106,15 +120,34 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-
+    fun deserializeToSet(input: String): Set<String> {
+        return input
+            .removePrefix("[")
+            .removeSuffix("]")
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+    }
 
     fun selectedCameraGroupFun(selection: Set<Any>) {
+
+
         _uiState.update { currentState ->
 
             currentState.copy(
-                selectedCameraGroup = selection,
+                selectedCameraGroup = selection.toString(),
 
             )
+        }
+
+
+        viewModelScope.launch {
+
+            val settingsRepository = SettingsRepository(getApplication<Application>().dataStore)
+            settingsRepository.saveSelectedCameraGroup(selection.joinToString()) // Use custom serialization if needed
+
+
         }
     }
 
