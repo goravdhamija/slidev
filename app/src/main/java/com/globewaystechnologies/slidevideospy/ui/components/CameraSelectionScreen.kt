@@ -2,14 +2,21 @@ package com.globewaystechnologies.slidevideospy.ui.components
 
 // CameraSelectionScreen.kt (or wherever your Composable is)
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel // Import for viewModel
 import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
@@ -38,40 +45,41 @@ fun CameraSelectionScreen(
 
 
 
-//        for (cameraGroup in uiState.allCameraGroupsForSelection) {
-//            Row(verticalAlignment = Alignment.CenterVertically) {
-//                RadioButton(
-//                    selected = (uiState.selectedCameraGroup == cameraGroup),
-//                    onClick = {
-//                        cameraViewModel.selectedCameraGroupFun(cameraGroup)
-//                        onCameraIdsSelected(uiState.selectedCameraGroup)
-//                    }
-//                )
-//                Text("Camera: ${cameraGroup}")
-//            }
-//        }
-
-
+        val cornerRadius = 16.dp
+        val gradientBrush = Brush.linearGradient(
+            colors = listOf(Color.Cyan, Color.Blue)
+        )
 
         for (cameraGroup in uiState.allCameraGroupsForSelection) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                    .height(100.dp)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .background(brush = gradientBrush, shape = RoundedCornerShape(cornerRadius))
+                    .clip(RoundedCornerShape(cornerRadius))
                     .clickable {
                         cameraViewModel.selectedCameraGroupFun(cameraGroup)
                         onCameraIdsSelected(cameraGroup)
                     }
+                    .padding(1.dp) // Simulates border thickness
             ) {
-                RadioButton(
-                    selected = (uiState.selectedCameraGroup == cameraGroup),
-                    onClick = null // Let Row handle the click
-                )
-                Text(
-                    text = "Camera: $cameraGroup",
-                    modifier = Modifier.padding(start = 8.dp)
-                )
+                // Inner content box with white background
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(cornerRadius - 1.dp))
+                        .background(Color.White)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    RadioButton(
+                        selected = (uiState.selectedCameraGroup == cameraGroup),
+                        onClick = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Camera: $cameraGroup")
+                }
             }
         }
 

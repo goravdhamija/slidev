@@ -12,8 +12,8 @@ import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 sealed class NavRoutes(val route: String) {
     object Home : NavRoutes("home")
-    object Contacts : NavRoutes("contacts")
-    object Favorites : NavRoutes("favorites")
+    object Gallery : NavRoutes("gallery")
+    object Settings : NavRoutes("settings")
 }
 
 
@@ -26,10 +26,10 @@ public fun NavigationHost(navController: NavHostController, sharedViewModel: Sha
         composable(NavRoutes.Home.route) {
             Home(sharedViewModel)
         }
-        composable(NavRoutes.Contacts.route) {
+        composable(NavRoutes.Gallery.route) {
             Contacts(sharedViewModel)
         }
-        composable(NavRoutes.Favorites.route) {
+        composable(NavRoutes.Settings.route) {
             Favorites(sharedViewModel)
         }
     }

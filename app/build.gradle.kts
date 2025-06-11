@@ -96,5 +96,7 @@ dependencies {
     implementation("androidx.datastore:datastore-rxjava3:1.1.7")
     implementation("androidx.datastore:datastore-core:1.1.7")
 
+    implementation("androidx.compose.material:material-icons-extended:1.6.1")
+
 
 }
