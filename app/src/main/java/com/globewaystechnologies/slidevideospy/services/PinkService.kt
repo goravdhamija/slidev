@@ -64,7 +64,10 @@ class PinkService : Service() {
     private lateinit var backgroundHandler: Handler
     private lateinit var recordingSurface: Surface
     private lateinit var settingsRepository: SettingsRepository
+    var concurencyType:String =  "Single"
+
     var mainCameraID:Int =  0
+    var secondaryCameraID:Int =  1
 
 
     private var cameraDevice: CameraDevice? = null
@@ -143,7 +146,30 @@ class PinkService : Service() {
                     val type = parts[0]     // "single"
                     val val1 = parts[1]     // "0"
                     val val2 = parts[2]     // "1"
-                    mainCameraID = val2.toInt()
+                    concurencyType = type.trim()
+
+
+                    if (concurencyType == "single") {
+                        mainCameraID = val2.toInt()
+                    }
+                    else if (concurencyType == "double") {
+
+
+                        val itemsx = val2.removePrefix("{").removeSuffix("}")
+                            .split(",")
+                            .map { it.trim() }
+                        mainCameraID = itemsx[0].toInt()
+
+
+                        val val3 = parts[3]
+                        Log.d("Camera Group 1", "${val3}" )
+                        val itemsy = val3.removePrefix("{").removeSuffix("}")
+                            .split(",")
+                            .map { it.trim() }
+                        secondaryCameraID = itemsy[0].toInt()
+
+
+                    }
                 }
             }
         }
@@ -204,7 +230,7 @@ class PinkService : Service() {
 
     @RequiresPermission(Manifest.permission.CAMERA)
     private fun startCameraAndRecord() {
-        cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
+                    cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
                     cameraId = cameraManager.cameraIdList[mainCameraID]
                     cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
                         @RequiresApi(Build.VERSION_CODES.S)
