@@ -73,7 +73,6 @@ class PinkService : Service() {
     private var secondaryCameraDevice: CameraDevice? = null
     private var secondaryMediaRecorder: MediaRecorder? = null
     private var secondaryCameraCaptureSession: CameraCaptureSession? = null
-    private lateinit var cameraId: String
     private lateinit var wakeLock: PowerManager.WakeLock
     var fileMain: File? = null
     var fileSecondary: File? = null
@@ -224,12 +223,11 @@ class PinkService : Service() {
     @RequiresPermission(Manifest.permission.CAMERA)
     private fun startCameraAndRecord() {
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-        cameraId = cameraManager.cameraIdList[mainCameraID]
-        cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+        val mainId = cameraManager.cameraIdList[mainCameraID]
+        cameraManager.openCamera(mainId, object : CameraDevice.StateCallback() {
             @RequiresApi(Build.VERSION_CODES.S)
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
-//                startRecordingSession()
                 startRecordingSession(camera, isSecondary = false)
             }
 
@@ -268,8 +266,6 @@ class PinkService : Service() {
 
     private fun startRecordingSession(camera: CameraDevice, isSecondary: Boolean) {
         requestAudioFocus()
-
-
 
         val publicDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
