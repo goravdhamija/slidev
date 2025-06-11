@@ -64,10 +64,10 @@ class PinkService : Service() {
     private lateinit var backgroundHandler: Handler
     private lateinit var recordingSurface: Surface
     private lateinit var settingsRepository: SettingsRepository
-    var concurencyType:String =  "Single"
+    var concurencyType: String = "Single"
 
-    var mainCameraID:Int =  0
-    var secondaryCameraID:Int =  1
+    var mainCameraID: Int = 0
+    var secondaryCameraID: Int = 1
 
 
     private var cameraDevice: CameraDevice? = null
@@ -85,9 +85,12 @@ class PinkService : Service() {
     private lateinit var surfaceView: SurfaceView
 
 
-        private fun acquireWakeLock() {
+    private fun acquireWakeLock() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SlideViewSpy1::CameraWakeLock")
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "SlideViewSpy1::CameraWakeLock"
+        )
         wakeLock.acquire()
     }
 
@@ -109,13 +112,13 @@ class PinkService : Service() {
 
 
     override fun onBind(intent: Intent): IBinder {
-       // TODO("Return the communication channel to the service.")
+        // TODO("Return the communication channel to the service.")
         return binder
     }
 
     override fun onUnbind(intent: Intent): Boolean {
         // All clients have unbound with unbindService()
-        Log.d("PinkService", "On Unbind Called" )
+        Log.d("PinkService", "On Unbind Called")
         return allowRebind
     }
 
@@ -124,12 +127,12 @@ class PinkService : Service() {
         // after onUnbind() has already been called
     }
 
-    fun getPendingIntent(): PendingIntent{
+    fun getPendingIntent(): PendingIntent {
         val serviceIntent = Intent(this, PinkService::class.java)
-        return PendingIntent.getService(this,0,serviceIntent, PendingIntent.FLAG_IMMUTABLE)
+        return PendingIntent.getService(this, 0, serviceIntent, PendingIntent.FLAG_IMMUTABLE)
     }
 
-    inner class PinkServiceBinder: Binder() {
+    inner class PinkServiceBinder : Binder() {
         fun getService(): PinkService = this@PinkService
     }
 
@@ -150,9 +153,10 @@ class PinkService : Service() {
 
 
                     if (concurencyType == "single") {
+
                         mainCameraID = val2.toInt()
-                    }
-                    else if (concurencyType == "double") {
+
+                    } else if (concurencyType == "double") {
 
 
                         val itemsx = val2.removePrefix("{").removeSuffix("}")
@@ -162,7 +166,7 @@ class PinkService : Service() {
 
 
                         val val3 = parts[3]
-                        Log.d("Camera Group 1", "${val3}" )
+                        Log.d("Camera Group 1", "${val3}")
                         val itemsy = val3.removePrefix("{").removeSuffix("}")
                             .split(",")
                             .map { it.trim() }
@@ -178,7 +182,7 @@ class PinkService : Service() {
         // addOverlayWithCloseButton()
 //        startOverlayView()
 
-        Log.d("PinkService", "On Create Services" )
+        Log.d("PinkService", "On Create Services")
 
     }
 
@@ -188,7 +192,8 @@ class PinkService : Service() {
 
         // showCameraOverlay()
 
-        startForeground(123,
+        startForeground(
+            123,
             createNotification(),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
@@ -227,36 +232,28 @@ class PinkService : Service() {
     }
 
 
-
     @RequiresPermission(Manifest.permission.CAMERA)
     private fun startCameraAndRecord() {
-                    cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-                    cameraId = cameraManager.cameraIdList[mainCameraID]
-                    cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
-                        @RequiresApi(Build.VERSION_CODES.S)
-                        override fun onOpened(camera: CameraDevice) {
-                            cameraDevice = camera
-                            startRecordingSession()
-                        }
+        cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
+        cameraId = cameraManager.cameraIdList[mainCameraID]
+        cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+            @RequiresApi(Build.VERSION_CODES.S)
+            override fun onOpened(camera: CameraDevice) {
+                cameraDevice = camera
+                startRecordingSession()
+            }
 
-                        override fun onDisconnected(camera: CameraDevice) {
-                            camera.close()
-                        }
+            override fun onDisconnected(camera: CameraDevice) {
+                camera.close()
+            }
 
-                        override fun onError(camera: CameraDevice, error: Int) {
-                            camera.close()
-                        }
-                    }, null)
-
-
-
-
-
+            override fun onError(camera: CameraDevice, error: Int) {
+                camera.close()
+            }
+        }, null)
 
 
     }
-
-
 
 
     private fun startRecordingSession() {
@@ -277,9 +274,9 @@ class PinkService : Service() {
         if (!folder1.exists()) folder1.mkdirs()
         val videoFile = File(folder1, "video_${System.currentTimeMillis()}.mp4")
         Log.d(
-                "PinkServiceCamera:",
-                "Camera Facing. :${publicDir}"
-            )
+            "PinkServiceCamera:",
+            "Camera Facing. :${publicDir}"
+        )
 
         videoUri?.let {
             val fileDescriptor = contentResolver.openFileDescriptor(it, "w")?.fileDescriptor
@@ -292,7 +289,7 @@ class PinkService : Service() {
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setOutputFile(fileDescriptor)
-           // setOutputFile(videoFile.absolutePath)
+            // setOutputFile(videoFile.absolutePath)
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setAudioEncodingBitRate(96000)
@@ -302,9 +299,6 @@ class PinkService : Service() {
             setVideoEncodingBitRate(3 * 1024 * 1024)
             prepare()
         }
-
-
-
 
 
 //            mediaRecorder.apply {
@@ -321,13 +315,6 @@ class PinkService : Service() {
 //            }
 
 
-
-
-
-
-
-
-
         val surfaces = ArrayList<Surface>()
         val recorderSurface = mediaRecorder.surface
 //        val previewSurface = surfaceView.holder.surface
@@ -335,14 +322,14 @@ class PinkService : Service() {
 //        surfaces.add(previewSurface)
 
 
-
         cameraDevice?.createCaptureSession(surfaces, object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(session: CameraCaptureSession) {
                 cameraCaptureSession = session
-                val captureRequest = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
-                    addTarget(recorderSurface)
+                val captureRequest =
+                    cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
+                        addTarget(recorderSurface)
 //                    addTarget(previewSurface)
-                }
+                    }
                 session.setRepeatingRequest(captureRequest.build(), null, null)
                 mediaRecorder.start()
             }
@@ -385,7 +372,7 @@ class PinkService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceRunningCurrently = false
-        Log.d("PinkService", "On Destroy Called" )
+        Log.d("PinkService", "On Destroy Called")
 
         mediaRecorder?.apply {
             stop()
@@ -408,12 +395,14 @@ class PinkService : Service() {
     }
 
 
-
     fun createMediaStoreVideoUri(context: Context): Uri? {
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, "video_${System.currentTimeMillis()}.mp4")
             put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/MediaSync") // Custom subfolder in Movies
+            put(
+                MediaStore.MediaColumns.RELATIVE_PATH,
+                Environment.DIRECTORY_MOVIES + "/MediaSync"
+            ) // Custom subfolder in Movies
             put(MediaStore.Video.Media.IS_PENDING, 1)
         }
 
@@ -432,7 +421,6 @@ class PinkService : Service() {
             MediaRecorder()
         }
     }
-
 
 
     private fun showCameraOverlay() {
@@ -460,7 +448,7 @@ class PinkService : Service() {
     }
 
     private fun addOverlayWithCloseButton() {
-     //   windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        //   windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
         // Create parent layout
         overlayView2 = FrameLayout(this)
@@ -538,7 +526,7 @@ class PinkService : Service() {
             PixelFormat.TRANSLUCENT
         )
 
-         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_view, null)
+        overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_view, null)
 
         windowManager.addView(overlayView, overlayParams)
     }
