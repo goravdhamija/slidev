@@ -1,5 +1,6 @@
 package com.globewaystechnologies.slidevideospy.viewmodel
 
+import CameraPreviewController
 import android.app.Application
 import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
@@ -44,7 +45,10 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val _uiState = MutableStateFlow(CameraSelectionUiState())
     val uiState: StateFlow<CameraSelectionUiState> = _uiState.asStateFlow()
 
+    private val _showPreviews = MutableStateFlow(true)
+    val showPreviews: StateFlow<Boolean> = _showPreviews
 
+    val previewController = CameraPreviewController()
 
 
     init {
@@ -167,4 +171,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     fun refreshCameraDetails() {
         loadCameraDetails()
     }
+
+
+    fun hidePreviews() {
+        _showPreviews.value = false
+    }
+
+    fun showPreviewsAgain() {
+        _showPreviews.value = true
+    }
+
+
+
 }

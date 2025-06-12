@@ -7,8 +7,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,9 +16,7 @@ import com.globewaystechnologies.slidevideospy.ui.components.BottomNavigationBar
 import com.globewaystechnologies.slidevideospy.ui.components.BrandedTopAppBar
 import com.globewaystechnologies.slidevideospy.ui.components.NavigationHost
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import com.globewaystechnologies.slidevideospy.services.PinkService
-import com.globewaystechnologies.slidevideospy.utils.isMyServiceRunning
 import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
 
 
@@ -34,7 +30,7 @@ public fun MainScreen(
     val navController = rememberNavController()
     val context = LocalContext.current
     val serviceIntent = Intent(context.applicationContext, PinkService::class.java)
-
+    val cameraViewModel: CameraViewModel = viewModel()
     val sharedServiceState by sharedViewModel.isServiceRunning.collectAsState()
 
     Scaffold(
@@ -45,7 +41,9 @@ public fun MainScreen(
                 onStartStopServiceClick = {
                     if (sharedServiceState) {
                         context.stopService(serviceIntent)
+                        cameraViewModel.previewController.startPreview()
                     } else {
+                        cameraViewModel.previewController.stopPreview()
                         context.startForegroundService(serviceIntent)
                     }
                     sharedViewModel.updateServiceRunning(!sharedServiceState)
@@ -58,7 +56,7 @@ public fun MainScreen(
             Column(
                 Modifier.padding(padding)
             ) {
-                NavigationHost(navController = navController, sharedViewModel = sharedViewModel)
+                NavigationHost(navController = navController, sharedViewModel = sharedViewModel,cameraViewModel)
             }
         },
         bottomBar = {

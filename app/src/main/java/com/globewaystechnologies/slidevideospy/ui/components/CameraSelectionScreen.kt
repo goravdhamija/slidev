@@ -1,15 +1,12 @@
 package com.globewaystechnologies.slidevideospy.ui.components
 
 // CameraSelectionScreen.kt (or wherever your Composable is)
+import CameraPreviewBox
 import android.app.Service.CAMERA_SERVICE
-import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.media.MediaRecorder
-import android.util.Log
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,7 +35,7 @@ fun CameraSelectionScreen(
     val uiState by cameraViewModel.uiState.collectAsState()
     var context = LocalContext.current
     var cameraManager = context.getSystemService(CAMERA_SERVICE) as CameraManager
-
+    val showPreviews by cameraViewModel.showPreviews.collectAsState()
 
     Column(
         modifier = Modifier
@@ -98,28 +95,22 @@ fun CameraSelectionScreen(
                         .map { it.trim() }
                     cameraDeviceID1 = itemsx[0].toInt()
 
-//                    val val3 = parts[3]
-//                    val itemsy = val3.removePrefix("{").removeSuffix("}")
-//                        .split(",")
-//                        .map { it.trim() }
-//                    cameraDeviceID2 = itemsy[0].toInt()
-//                    cameraDevice2 = cameraManager.cameraIdList[1]
-//                    Log.d("typez", "${type}")
+                    val val3 = parts[3].removePrefix("[").removeSuffix("]").trim()
+                    val itemsy = val3.removePrefix("{").removeSuffix("}")
+                        .split(",")
+                        .map { it.trim() }
+                    cameraDeviceID2 = itemsy[0].toInt()
+
 
                 }
 
                 val characteristics1 = cameraManager.getCameraCharacteristics(cameraDeviceID1.toString())
-
-
                 val facing = when (characteristics1.get(CameraCharacteristics.LENS_FACING)) {
                     CameraCharacteristics.LENS_FACING_FRONT -> "Front"
                     CameraCharacteristics.LENS_FACING_BACK -> "Back"
                     else -> "Unknown"
                 }
-
-                Log.d("facing", "${characteristics1.get(CameraCharacteristics.LENS_FACING)}")
                 var orientation = characteristics1.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
-
                 val map = characteristics1.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
                 val resolutions = map?.getOutputSizes(MediaRecorder::class.java)?.map { "${it.width}x${it.height}" } ?: emptyList()
 
@@ -134,6 +125,19 @@ fun CameraSelectionScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+
+                        if (uiState.selectedCameraGroup == cameraGroup.toString() && showPreviews) {
+                            CameraPreviewBox(
+                                cameraId = cameraDeviceID1.toString(),
+                                modifier = Modifier
+                                    .width(70.dp)
+                                    .height(100.dp)
+                                    .padding(top = 8.dp),
+                                controller = cameraViewModel.previewController,
+                            )
+                        }
+
+
                         Text(
                             text = "Camera ID: ${cameraDeviceID1}",
                             style = MaterialTheme.typography.bodyLarge
@@ -179,8 +183,8 @@ fun CameraSelectionScreen(
 
 // Example Usage in your main app composable
 @Composable
-fun MyCameraAppWithViewModel() {
-    val cameraViewModel: CameraViewModel = viewModel()
+fun MyCameraAppWithViewModel(cameraViewModel: CameraViewModel) {
+
     val cameraUiState by cameraViewModel.uiState.collectAsState()
 
     Column(

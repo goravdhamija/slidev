@@ -22,18 +22,22 @@ import com.globewaystechnologies.slidevideospy.ui.components.MyCameraAppWithView
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.globewaystechnologies.slidevideospy.services.PinkService
+import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 
 @Composable
 fun Home(
     sharedViewModel: SharedViewModel,
-         sharedViewModel1: SharedViewModel = viewModel()
+    sharedViewModel1: SharedViewModel = viewModel(),
+    cameraViewModel: CameraViewModel
 ) {
     val scrollStateW = rememberScrollState()
     val context = LocalContext.current
     val serviceIntent = Intent(context.applicationContext, PinkService::class.java)
     val sharedServiceState by sharedViewModel.isServiceRunning.collectAsState()
+
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -42,14 +46,16 @@ fun Home(
                 .verticalScroll(scrollStateW), // Make Column scrollable
             horizontalAlignment = Alignment.Start
         ) {
-            MyCameraAppWithViewModel()
+            MyCameraAppWithViewModel(cameraViewModel)
         }
 
         FloatingActionButton(
             onClick = {
                 if (sharedServiceState) {
                     context.stopService(serviceIntent)
+                    cameraViewModel.previewController.startPreview()
                 } else {
+                    cameraViewModel.previewController.stopPreview()
                     context.startService(serviceIntent)
                 }
                 sharedViewModel.updateServiceRunning(!sharedServiceState)

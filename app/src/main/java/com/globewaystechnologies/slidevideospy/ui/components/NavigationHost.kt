@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import com.globewaystechnologies.slidevideospy.screens.Gallery
 import com.globewaystechnologies.slidevideospy.screens.Home
 import com.globewaystechnologies.slidevideospy.screens.Settings
+import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 
@@ -23,7 +24,8 @@ sealed class NavRoutes(val route: String) {
 @Composable
 public fun NavigationHost(
     navController: NavHostController,
-    sharedViewModel: SharedViewModel = viewModel()
+    sharedViewModel: SharedViewModel = viewModel(),
+    cameraViewModel: CameraViewModel
 ) {
     val sharedServiceState by sharedViewModel.isServiceRunning.collectAsState()
 
@@ -32,7 +34,7 @@ public fun NavigationHost(
         startDestination = NavRoutes.Home.route,
     ) {
         composable(NavRoutes.Home.route) {
-            Home(sharedViewModel,sharedViewModel)
+            Home(sharedViewModel,sharedViewModel,cameraViewModel)
         }
         composable(NavRoutes.Gallery.route) {
             Gallery(sharedViewModel)
