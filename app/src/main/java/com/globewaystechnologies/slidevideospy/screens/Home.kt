@@ -8,38 +8,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.Text
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.globewaystechnologies.slidevideospy.ui.components.MyCameraAppWithViewModel
-import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.globewaystechnologies.slidevideospy.services.PinkService
-import com.globewaystechnologies.slidevideospy.utils.isMyServiceRunning
-import androidx.compose.ui.graphics.Color
+import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 
 @Composable
-fun Home(sharedViewModel: SharedViewModel) {
+fun Home(
+    sharedViewModel: SharedViewModel,
+         sharedViewModel1: SharedViewModel = viewModel()
+) {
     val scrollStateW = rememberScrollState()
     val context = LocalContext.current
     val serviceIntent = Intent(context.applicationContext, PinkService::class.java)
-    val isServiceRunning = remember {
-        mutableStateOf(isMyServiceRunning(context, PinkService::class.java))
-    }
-
+    val sharedServiceState by sharedViewModel.isServiceRunning.collectAsState()
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -53,20 +47,20 @@ fun Home(sharedViewModel: SharedViewModel) {
 
         FloatingActionButton(
             onClick = {
-                if (isServiceRunning.value) {
+                if (sharedServiceState) {
                     context.stopService(serviceIntent)
                 } else {
-                    context.startForegroundService(serviceIntent)
+                    context.startService(serviceIntent)
                 }
-                isServiceRunning.value = !isServiceRunning.value
+                sharedViewModel.updateServiceRunning(!sharedServiceState)
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
-            containerColor = if (isServiceRunning.value) Color.Red else Color(0xFF00695C)
+            containerColor = if (sharedServiceState) Color.Red else Color(0xFF00695C)
         ) {
             Text(
-                text = if (isServiceRunning.value) "STOP" else "START",
+                text = if (sharedServiceState) "STOP" else "START",
                 color = Color.White
             )
         }
@@ -78,10 +72,10 @@ fun Home(sharedViewModel: SharedViewModel) {
 @Preview(showBackground = true, name = "Greeting Preview")
 @Composable
 fun HomeScreenPreview() {
-    val fakeViewModel = object : SharedViewModel() {
-        override val text = MutableStateFlow("Preview Text")
-    }
-    Home(fakeViewModel)
+//    val fakeViewModel = object : SharedViewModel() {
+//        override val text = MutableStateFlow("Preview Text")
+//    }
+//    Home(fakeViewModel)
 }
 
 

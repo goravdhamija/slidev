@@ -10,6 +10,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.globewaystechnologies.slidevideospy.data.SettingsRepository
 import com.globewaystechnologies.slidevideospy.dataStore
+import com.globewaystechnologies.slidevideospy.services.PinkService
+import com.globewaystechnologies.slidevideospy.utils.isMyServiceRunning
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +38,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val cameraManager = application.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val _uiState = MutableStateFlow(CameraSelectionUiState())
     val uiState: StateFlow<CameraSelectionUiState> = _uiState.asStateFlow()
+
+
+
 
     init {
         loadCameraDetails()
