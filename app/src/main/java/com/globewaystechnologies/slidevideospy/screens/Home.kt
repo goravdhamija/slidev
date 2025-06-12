@@ -49,6 +49,7 @@ fun Home(
             horizontalAlignment = Alignment.Start
         ) {
             MyCameraAppWithViewModel(cameraViewModel)
+            Spacer(modifier = Modifier.height(54.dp))
         }
 
 

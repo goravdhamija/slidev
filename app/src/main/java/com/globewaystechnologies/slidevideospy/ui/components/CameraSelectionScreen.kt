@@ -21,6 +21,121 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PermCameraMic
+import androidx.compose.material.icons.filled.CameraFront
+import androidx.compose.material.icons.filled.CameraRear
+import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.Hd
+import androidx.compose.material3.Icon
+
+
+@Composable
+fun CameraIdLabel(cameraId: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.PermCameraMic,
+            contentDescription = "Camera ID",
+            tint = Color(0xFF0D47A1), // Indigo
+            modifier = Modifier
+                .size(20.dp)
+                .padding(end = 6.dp)
+        )
+        Text(
+            text = "Camera ID: $cameraId",
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color(0xFF0D47A1)
+        )
+    }
+}
+
+@Composable
+fun CameraFacingLabel(facing: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = if (facing == "Front") Icons.Filled.CameraFront else Icons.Filled.CameraRear,
+            contentDescription = "Camera Facing Icon",
+            tint = Color(0xFF0D47A1), // Dark Blue
+            modifier = Modifier
+                .size(20.dp)
+                .padding(end = 6.dp)
+        )
+        Text(
+            text = "$facing Camera",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
+fun CameraOrientationLabel(orientation: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.ScreenRotation,
+            contentDescription = "Sensor Orientation Icon",
+            tint = Color(0xFF6A1B9A), // A stylish deep purple
+            modifier = Modifier
+                .size(20.dp)
+                .padding(end = 6.dp)
+        )
+        Text(
+            text = "$orientation°",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
+fun MaxResolutionLabel(resolutions: List<String>) {
+    if (resolutions.isNotEmpty()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(vertical = 2.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Hd,
+                contentDescription = "Max Resolution",
+                tint = Color(0xFF004D40), // Teal tone
+                modifier = Modifier
+                    .size(20.dp)
+                    .padding(end = 6.dp)
+            )
+            Text(
+                text = "${resolutions.first()}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Black
+            )
+        }
+    }
+}
+
+
+@Composable
+fun MyCameraAppWithViewModel(cameraViewModel: CameraViewModel) {
+    Column(
+        modifier = Modifier
+            .padding(2.dp)
+            .fillMaxWidth()
+    ) {
+        CameraSelectionScreen(cameraViewModel = cameraViewModel) { selectedIds ->
+            println("Camera IDs selected in Composable: $selectedIds")
+        }
+    }
+}
+
+
+
 @Composable
 fun CameraSelectionScreen(
     cameraViewModel: CameraViewModel = viewModel(),
@@ -34,19 +149,23 @@ fun CameraSelectionScreen(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(1.dp)
     ) {
         Spacer(modifier = Modifier.weight(1f)) // Left spacer
 
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(360.dp)
+                .width(760.dp)
                 .padding(16.dp)
                 .background(Color(0xFFF5F5F5), shape = RoundedCornerShape(12.dp))
                 .clip(RoundedCornerShape(12.dp))
         ) {
-            Text("Available Cameras:", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
+            Text(
+                "Available Cameras:",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(8.dp)
+            )
 
             if (uiState.error != null) {
                 Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
@@ -90,15 +209,20 @@ fun CameraSelectionScreen(
                         cameraDeviceID2 = itemsy[0].toInt().toString()
                     }
 
-                    val characteristics1 = cameraManager.getCameraCharacteristics(cameraDeviceID1.toString())
+                    val characteristics1 =
+                        cameraManager.getCameraCharacteristics(cameraDeviceID1.toString())
                     val facing = when (characteristics1.get(CameraCharacteristics.LENS_FACING)) {
                         CameraCharacteristics.LENS_FACING_FRONT -> "Front"
                         CameraCharacteristics.LENS_FACING_BACK -> "Back"
                         else -> "Unknown"
                     }
-                    val orientation = characteristics1.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
-                    val map = characteristics1.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                    val resolutions = map?.getOutputSizes(MediaRecorder::class.java)?.map { "${it.width}x${it.height}" } ?: emptyList()
+                    val orientation =
+                        characteristics1.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+                    val map =
+                        characteristics1.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                    val resolutions = map?.getOutputSizes(MediaRecorder::class.java)
+                        ?.map { "${it.width}x${it.height}" } ?: emptyList()
+
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -136,33 +260,74 @@ fun CameraSelectionScreen(
                                 )
                             }
 
-                            Text("Camera ID: $cameraDeviceID1", style = MaterialTheme.typography.bodyLarge)
-                            Text("Facing: $facing", style = MaterialTheme.typography.bodyMedium)
-                            Text("Orientation: $orientation", style = MaterialTheme.typography.bodyMedium)
-                            Text("Resolutions: ${resolutions.joinToString()}", style = MaterialTheme.typography.bodySmall)
+                            if (cameraDeviceID2 != null) {
+                                Row {
+                                    Text(
+                                        text = "✅ Concurrent Camera Support Available",
+                                        color = Color(0xFF388E3C), // Green
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier
+                                            .padding(bottom = 8.dp)
+                                    )
+                                }
+                            }
+
+                            Row (
+                                verticalAlignment = Alignment.Top,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                            )
+                            {
+
+                                Column {
+
+
+                                    CameraIdLabel(cameraId = cameraDeviceID1.toString())
+                                    CameraFacingLabel(facing)
+                                    CameraOrientationLabel(orientation)
+                                    MaxResolutionLabel(resolutions)
+                                }
+
+                                if (cameraDeviceID2 != null) {
+                                    val characteristics2 =
+                                        cameraManager.getCameraCharacteristics(cameraDeviceID2)
+                                    val facing2 =
+                                        when (characteristics2.get(CameraCharacteristics.LENS_FACING)) {
+                                            CameraCharacteristics.LENS_FACING_FRONT -> "Front"
+                                            CameraCharacteristics.LENS_FACING_BACK -> "Back"
+                                            else -> "Unknown"
+                                        }
+                                    val orientation2 =
+                                        characteristics2.get(CameraCharacteristics.SENSOR_ORIENTATION)
+                                            ?: 0
+                                    val map2 =
+                                        characteristics2.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                                    val resolutions2 =
+                                        map2?.getOutputSizes(MediaRecorder::class.java)
+                                            ?.map { "${it.width}x${it.height}" } ?: emptyList()
+
+                                    Column {
+                                        CameraIdLabel(cameraId = cameraDeviceID2.toString())
+                                        CameraFacingLabel(facing2)
+                                        CameraOrientationLabel(orientation2)
+                                        MaxResolutionLabel(resolutions2)
+                                    }
+                                }
+                            }
                         }
 
-                        RadioButton(
-                            selected = (uiState.selectedCameraGroup == cameraGroup.toString()),
-                            onClick = null
-                        )
+                            RadioButton(
+                                selected = (uiState.selectedCameraGroup == cameraGroup.toString()),
+                                onClick = null
+                            )
+                        }
                     }
                 }
             }
         }
     }
-}
 
 
-@Composable
-fun MyCameraAppWithViewModel(cameraViewModel: CameraViewModel) {
-    Column(
-        modifier = Modifier
-            .padding(2.dp)
-            .fillMaxWidth()
-    ) {
-        CameraSelectionScreen(cameraViewModel = cameraViewModel) { selectedIds ->
-            println("Camera IDs selected in Composable: $selectedIds")
-        }
-    }
-}
+
+
