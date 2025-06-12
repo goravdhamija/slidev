@@ -54,6 +54,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
 
 
+
     private var dualService: DualPreviewServiceWithIds? = null
     private var isServiceActive = false
 
@@ -222,6 +223,10 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         Handler(Looper.getMainLooper()).postDelayed({
             startDualPreview(context, frontSurface, backSurface, "1", "0")
         }, 300)
+    }
+
+    fun setShowPreviews(value: Boolean) {
+        _showPreviews.value = value
     }
 
 

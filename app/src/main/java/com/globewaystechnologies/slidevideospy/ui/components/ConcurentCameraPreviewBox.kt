@@ -27,12 +27,16 @@ import androidx.camera.core.Camera
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 
 
 import androidx.lifecycle.LifecycleOwner
@@ -148,17 +152,24 @@ fun DualCameraPreviewScreenWithParams(
     }
 
     // Layout dynamically based on available camera views
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(
+        modifier = Modifier
+            .wrapContentSize() // This replaces fillMaxSize
+            .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+    ) {
         if (!frontCameraId.isNullOrBlank()) {
             AndroidView(
                 factory = { frontView },
                 modifier = frontModifier
+                    .padding(end = 12.dp)
             )
         }
         if (!backCameraId.isNullOrBlank()) {
             AndroidView(
                 factory = { backView },
                 modifier = backModifier
+                    .padding(start = 12.dp)
             )
         }
     }
