@@ -1,6 +1,7 @@
 package com.globewaystechnologies.slidevideospy.viewmodel
 
 import CameraPreviewController
+import StaticLifecycleOwner
 import android.app.Application
 import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
@@ -49,6 +50,10 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val showPreviews: StateFlow<Boolean> = _showPreviews
 
     val previewController = CameraPreviewController()
+    val backpreviewController =  CameraPreviewController()
+
+    val frontLifecycleOwner = StaticLifecycleOwner()
+    val backLifecycleOwner = StaticLifecycleOwner()
 
 
     init {

@@ -2,6 +2,9 @@ package com.globewaystechnologies.slidevideospy.ui.components
 
 // CameraSelectionScreen.kt (or wherever your Composable is)
 import CameraPreviewBox
+
+import DualCameraPreviewScreenWithParams
+import DualCameraPreviewView
 import android.app.Service.CAMERA_SERVICE
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
@@ -82,7 +85,7 @@ fun CameraSelectionScreen(
                 var cameraDevice2 = cameraManager.cameraIdList.firstOrNull { it == val2 } ?: "Unknown Camera ID"
 
                 var cameraDeviceID1 = 0
-                var cameraDeviceID2 = 1
+                var cameraDeviceID2 = -1
 
                 if (type == "single") {
                     cameraDeviceID1 = val2.toInt()
@@ -127,14 +130,35 @@ fun CameraSelectionScreen(
                     Column(modifier = Modifier.weight(1f)) {
 
                         if (uiState.selectedCameraGroup == cameraGroup.toString() && showPreviews) {
-                            CameraPreviewBox(
-                                cameraId = cameraDeviceID1.toString(),
-                                modifier = Modifier
-                                    .width(70.dp)
-                                    .height(100.dp)
-                                    .padding(top = 8.dp),
-                                controller = cameraViewModel.previewController,
-                            )
+
+
+                            if (cameraDeviceID2 > -1) {
+//                                CameraPreviewBox(
+//                                    cameraId = "0",
+//                                    modifier = Modifier
+//                                        .width(70.dp)
+//                                        .height(100.dp)
+//                                        .padding(top = 8.dp),
+//                                    controller = cameraViewModel.backpreviewController,
+//                                    lifecycleOwner = cameraViewModel.backLifecycleOwner
+//                                )
+
+                                DualCameraPreviewScreenWithParams("0","1")
+
+                            } else {
+                                CameraPreviewBox(
+                                    cameraId = "1",
+                                    modifier = Modifier
+                                        .width(70.dp)
+                                        .height(100.dp)
+                                        .padding(top = 8.dp),
+                                    controller = cameraViewModel.previewController,
+                                    lifecycleOwner = cameraViewModel.frontLifecycleOwner
+                                )
+                            }
+
+
+
                         }
 
 
