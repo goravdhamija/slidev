@@ -12,12 +12,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.globewaystechnologies.slidevideospy.services.PinkService
 import com.globewaystechnologies.slidevideospy.ui.components.BottomNavigationBarColored
 import com.globewaystechnologies.slidevideospy.ui.components.BrandedTopAppBar
 import com.globewaystechnologies.slidevideospy.ui.components.NavigationHost
-import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
-import com.globewaystechnologies.slidevideospy.services.PinkService
 import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
+import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 
 @Composable
@@ -57,11 +57,17 @@ public fun MainScreen(
             Column(
                 Modifier.padding(padding)
             ) {
-                NavigationHost(navController = navController, sharedViewModel = sharedViewModel,cameraViewModel)
+                NavigationHost(
+                    navController = navController,
+                    sharedViewModel = sharedViewModel,
+                    cameraViewModel
+                )
             }
         },
         bottomBar = {
-            BottomNavigationBarColored(navController = navController)
+            BottomNavigationBarColored(
+                navController = navController
+            )
         }
     )
 

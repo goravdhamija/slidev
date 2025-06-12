@@ -46,7 +46,7 @@ fun BrandedTopAppBar(titleText: String = "Omni Vision",
                 onClick = onStartStopServiceClick,
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isServiceRunning) Color.Red else Color(0xFF00695C),
+                    containerColor = if (isServiceRunning) Color.Red else Color(0xFF4A148C),
                     contentColor = Color.White
                 ),
                 modifier = Modifier

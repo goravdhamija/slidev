@@ -126,7 +126,9 @@ fun CameraSelectionScreen(
                         .background(Color.White)
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
 
                         if (uiState.selectedCameraGroup == cameraGroup.toString() && showPreviews) {
 
@@ -134,12 +136,12 @@ fun CameraSelectionScreen(
                                     frontCameraId = cameraDeviceID1,
                                     backCameraId = cameraDeviceID2,
                                     frontModifier = Modifier
-                                        .width(70.dp)
-                                        .height(150.dp)
+                                        .width(144.dp)
+                                        .height(176.dp)
                                         .padding(start = 16.dp, top = 16.dp),
                                     backModifier = Modifier
-                                        .width(70.dp)
-                                        .height(150.dp)
+                                        .width(144.dp)
+                                        .height(176.dp)
                                         .padding(end = 16.dp, top = 16.dp)
                                 )
 
@@ -190,7 +192,7 @@ fun MyCameraAppWithViewModel(cameraViewModel: CameraViewModel) {
 
     Column(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(2.dp)
             .fillMaxWidth()
 
     ) {

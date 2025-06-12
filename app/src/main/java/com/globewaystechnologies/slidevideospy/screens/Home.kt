@@ -39,15 +39,19 @@ fun Home(
 
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(2.dp)
                 .fillMaxWidth()
                 .verticalScroll(scrollStateW), // Make Column scrollable
             horizontalAlignment = Alignment.Start
         ) {
             MyCameraAppWithViewModel(cameraViewModel)
         }
+
+
 
         FloatingActionButton(
             onClick = {
@@ -62,15 +66,20 @@ fun Home(
                 sharedViewModel.updateServiceRunning(!sharedServiceState)
             },
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            containerColor = if (sharedServiceState) Color.Red else Color(0xFF00695C)
+                .align(Alignment.BottomCenter)
+                .padding(12.dp),
+            containerColor = if (sharedServiceState) Color.Red else Color(0xFF4A148C)
         ) {
             Text(
-                text = if (sharedServiceState) "STOP" else "START",
-                color = Color.White
+                text = if (sharedServiceState) "STOP BACKGROUND RECORDING" else "START BACKGROUND RECORDING",
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
+
+
+
+
     }
 
 }
