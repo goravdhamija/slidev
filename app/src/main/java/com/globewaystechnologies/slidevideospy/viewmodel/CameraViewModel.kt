@@ -1,13 +1,16 @@
 package com.globewaystechnologies.slidevideospy.viewmodel
 
-import CameraPreviewController
-import StaticLifecycleOwner
+import DualPreviewServiceWithIds
+
 import android.app.Application
 import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.Surface
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.globewaystechnologies.slidevideospy.data.SettingsRepository
@@ -49,11 +52,10 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val _showPreviews = MutableStateFlow(true)
     val showPreviews: StateFlow<Boolean> = _showPreviews
 
-    val previewController = CameraPreviewController()
-    val backpreviewController =  CameraPreviewController()
 
-    val frontLifecycleOwner = StaticLifecycleOwner()
-    val backLifecycleOwner = StaticLifecycleOwner()
+
+    private var dualService: DualPreviewServiceWithIds? = null
+    private var isServiceActive = false
 
 
     init {
@@ -186,6 +188,41 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         _showPreviews.value = true
     }
 
+
+
+    fun startDualPreview(
+        context: Context,
+        frontSurface: Surface,
+        backSurface: Surface,
+        frontId: String,
+        backId: String
+    ) {
+        if (!isServiceActive) {
+            dualService = DualPreviewServiceWithIds(
+                context = context,
+                frontCameraId = frontId,
+                backCameraId = backId,
+                frontSurface = frontSurface,
+                backSurface = backSurface
+            )
+            dualService?.start()
+            isServiceActive = true
+        }
+    }
+
+    fun stopDualPreview() {
+        dualService?.stop()
+        dualService = null
+        isServiceActive = false
+    }
+
+    fun resumeAfterPinkService(context: Context, frontSurface: Surface, backSurface: Surface) {
+        stopDualPreview()
+        // Optional small delay to ensure PinkService releases cameras
+        Handler(Looper.getMainLooper()).postDelayed({
+            startDualPreview(context, frontSurface, backSurface, "1", "0")
+        }, 300)
+    }
 
 
 }

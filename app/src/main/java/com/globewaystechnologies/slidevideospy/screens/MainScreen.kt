@@ -41,9 +41,10 @@ public fun MainScreen(
                 onStartStopServiceClick = {
                     if (sharedServiceState) {
                         context.stopService(serviceIntent)
-                        cameraViewModel.previewController.startPreview()
+
                     } else {
-                        cameraViewModel.previewController.stopPreview()
+
+                        cameraViewModel.stopDualPreview()
                         context.startForegroundService(serviceIntent)
                     }
                     sharedViewModel.updateServiceRunning(!sharedServiceState)
