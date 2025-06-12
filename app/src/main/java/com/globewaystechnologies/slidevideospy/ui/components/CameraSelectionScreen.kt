@@ -188,17 +188,13 @@ fun CameraSelectionScreen(
 @Composable
 fun MyCameraAppWithViewModel(cameraViewModel: CameraViewModel) {
 
-    val cameraUiState by cameraViewModel.uiState.collectAsState()
-
     Column(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
 
     ) {
-        CameraSelectionScreen(
-            cameraViewModel = cameraViewModel // Pass the ViewModel instance
-        ) { selectedIds ->
+        CameraSelectionScreen( cameraViewModel = cameraViewModel ) { selectedIds ->
             println("Camera IDs selected in Composable: $selectedIds")
         }
 
