@@ -14,6 +14,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.os.Binder
 import android.os.Build
@@ -284,9 +285,14 @@ class PinkService : Service() {
         fileMain = videoFile
     }
 
-    val recorder = createMediaRecorder(this)
+        val cameraIdOn = if (isSecondary) secondaryCameraID else mainCameraID
+        val characteristics = cameraManager.getCameraCharacteristics(cameraIdOn.toString())
+        var orientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+
+
+        val recorder = createMediaRecorder(this)
     recorder.apply {
-            setOrientationHint(270)
+            setOrientationHint(orientation)
             setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)

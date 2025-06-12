@@ -27,11 +27,16 @@ data class CameraSelectionUiState(
 
     val allCameraGroupsForSelection: Set<Set<Any>> = emptySet(), // IDs to use for opening camera
     val selectedCameraGroup: String = "", // Serialized string of selected camera group
-
     val error: String? = null
-) {
+)
 
-}
+data class CameraGroupInfo(
+    val id: String,
+    val facing: String, // "Front" or "Back"
+    val orientation: Int, // in degrees, e.g., 0, 90, 180, 270
+    val resolutions: List<String>,
+    val characteristics: Map<String, String>
+)
 
 class CameraViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -53,6 +58,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 val allSelectableCameraItemsSets = mutableSetOf<Set<Any>>()
 
                 cameraManager.cameraIdList.forEach { cameraId ->
+
+                    Log.d("cameraId", "${cameraId}")
                     val characteristics = cameraManager.getCameraCharacteristics(cameraId)
                     when (characteristics.get(CameraCharacteristics.LENS_FACING)) {
                         CameraCharacteristics.LENS_FACING_FRONT -> {
