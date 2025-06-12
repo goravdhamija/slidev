@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.CameraFront
 import androidx.compose.material.icons.filled.CameraRear
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Hd
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 
 
@@ -46,8 +47,9 @@ fun CameraIdLabel(cameraId: String) {
         )
         Text(
             text = "Camera ID: $cameraId",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color(0xFF0D47A1)
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Black
+
         )
     }
 }
@@ -68,8 +70,8 @@ fun CameraFacingLabel(facing: String) {
         )
         Text(
             text = "$facing Camera",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Black
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color(0xFF0D47A1)
         )
     }
 }
@@ -162,9 +164,10 @@ fun CameraSelectionScreen(
                 .clip(RoundedCornerShape(12.dp))
         ) {
             Text(
-                "Available Cameras:",
+                text = "Select the available cameras on your device to activate and run background camera recording.",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
+                color = MaterialTheme.colorScheme.primary
             )
 
             if (uiState.error != null) {
@@ -317,10 +320,27 @@ fun CameraSelectionScreen(
                             }
                         }
 
-                            RadioButton(
-                                selected = (uiState.selectedCameraGroup == cameraGroup.toString()),
-                                onClick = null
-                            )
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    if (uiState.selectedCameraGroup == cameraGroup.toString())
+                                        Color(0xFF4CAF50) // Green if selected
+                                    else
+                                        Color.LightGray
+                                )
+                                .padding(4.dp)
+                        ) {
+                            if (uiState.selectedCameraGroup == cameraGroup.toString()) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = Color.White,
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            }
+                        }
                         }
                     }
                 }
