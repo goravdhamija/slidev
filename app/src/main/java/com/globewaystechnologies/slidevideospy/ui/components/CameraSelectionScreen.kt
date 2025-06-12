@@ -1,10 +1,9 @@
 package com.globewaystechnologies.slidevideospy.ui.components
 
-// CameraSelectionScreen.kt (or wherever your Composable is)
-import CameraPreviewBox
+
 
 import DualCameraPreviewScreenWithParams
-import DualCameraPreviewView
+
 import android.app.Service.CAMERA_SERVICE
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
@@ -64,7 +63,7 @@ fun CameraSelectionScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
+                    .height(320.dp)
                     .padding(horizontal = 12.dp, vertical = 8.dp)
                     .background(brush = gradientBrush, shape = RoundedCornerShape(cornerRadius))
                     .clip(RoundedCornerShape(cornerRadius))
@@ -84,11 +83,11 @@ fun CameraSelectionScreen(
                 var cameraDevice1 = cameraManager.cameraIdList.firstOrNull { it == val2 } ?: "Unknown Camera ID"
                 var cameraDevice2 = cameraManager.cameraIdList.firstOrNull { it == val2 } ?: "Unknown Camera ID"
 
-                var cameraDeviceID1 = 0
-                var cameraDeviceID2 = -1
+                var cameraDeviceID1:String? = null
+                var cameraDeviceID2:String? = null
 
                 if (type == "single") {
-                    cameraDeviceID1 = val2.toInt()
+                    cameraDeviceID1 = val2.toInt().toString()
 
                 }
                 else if (type == "double") {
@@ -96,13 +95,13 @@ fun CameraSelectionScreen(
                     val itemsx = val2.removePrefix("{").removeSuffix("}")
                         .split(",")
                         .map { it.trim() }
-                    cameraDeviceID1 = itemsx[0].toInt()
+                    cameraDeviceID1 = itemsx[0].toInt().toString()
 
                     val val3 = parts[3].removePrefix("[").removeSuffix("]").trim()
                     val itemsy = val3.removePrefix("{").removeSuffix("}")
                         .split(",")
                         .map { it.trim() }
-                    cameraDeviceID2 = itemsy[0].toInt()
+                    cameraDeviceID2 = itemsy[0].toInt().toString()
 
 
                 }
@@ -131,33 +130,18 @@ fun CameraSelectionScreen(
 
                         if (uiState.selectedCameraGroup == cameraGroup.toString() && showPreviews) {
 
-
-                            if (cameraDeviceID2 > -1) {
-//                                CameraPreviewBox(
-//                                    cameraId = "0",
-//                                    modifier = Modifier
-//                                        .width(70.dp)
-//                                        .height(100.dp)
-//                                        .padding(top = 8.dp),
-//                                    controller = cameraViewModel.backpreviewController,
-//                                    lifecycleOwner = cameraViewModel.backLifecycleOwner
-//                                )
-
-                                DualCameraPreviewScreenWithParams("0","1")
-
-                            } else {
-                                CameraPreviewBox(
-                                    cameraId = "1",
-                                    modifier = Modifier
+                                DualCameraPreviewScreenWithParams(
+                                    frontCameraId = cameraDeviceID1,
+                                    backCameraId = cameraDeviceID2,
+                                    frontModifier = Modifier
                                         .width(70.dp)
-                                        .height(100.dp)
-                                        .padding(top = 8.dp),
-                                    controller = cameraViewModel.previewController,
-                                    lifecycleOwner = cameraViewModel.frontLifecycleOwner
+                                        .height(150.dp)
+                                        .padding(start = 16.dp, top = 16.dp),
+                                    backModifier = Modifier
+                                        .width(70.dp)
+                                        .height(150.dp)
+                                        .padding(end = 16.dp, top = 16.dp)
                                 )
-                            }
-
-
 
                         }
 
@@ -178,12 +162,7 @@ fun CameraSelectionScreen(
                             text = "Resolutions: ${resolutions.joinToString()}",
                             style = MaterialTheme.typography.bodySmall
                         )
-//                        cameraGroup.characteristics.forEach { (key, value) ->
-//                            Text(
-//                                text = "$key: $value",
-//                                style = MaterialTheme.typography.bodySmall
-//                            )
-//                        }
+
                     }
 
                     RadioButton(

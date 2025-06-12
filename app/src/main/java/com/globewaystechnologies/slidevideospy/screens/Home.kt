@@ -53,9 +53,10 @@ fun Home(
             onClick = {
                 if (sharedServiceState) {
                     context.stopService(serviceIntent)
-                    cameraViewModel.previewController.startPreview()
+
                 } else {
-                    cameraViewModel.previewController.stopPreview()
+
+                    cameraViewModel.stopDualPreview()
                     context.startService(serviceIntent)
                 }
                 sharedViewModel.updateServiceRunning(!sharedServiceState)
