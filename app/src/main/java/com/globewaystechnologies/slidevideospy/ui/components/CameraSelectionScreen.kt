@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
+import androidx.compose.ui.unit.sp
 
 
 @Composable
@@ -137,7 +138,6 @@ fun MyCameraAppWithViewModel(cameraViewModel: CameraViewModel) {
 }
 
 
-
 @Composable
 fun CameraSelectionScreen(
     cameraViewModel: CameraViewModel = viewModel(),
@@ -164,7 +164,7 @@ fun CameraSelectionScreen(
                 .clip(RoundedCornerShape(12.dp))
         ) {
             Text(
-                text = "Select the available cameras on your device to activate and run background camera recording.",
+                text = "Select the available camera's on your device to activate and run background camera recording.",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(8.dp),
                 color = MaterialTheme.colorScheme.primary
@@ -232,7 +232,12 @@ fun CameraSelectionScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(cornerRadius - 1.dp))
-                            .background(Color.White)
+                            .background(
+                                if (uiState.selectedCameraGroup == cameraGroup.toString())
+                                    Color(0xFFE8F5E9) // Light green shade
+                                else
+                                    Color.White
+                            )
                             .padding(12.dp)
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -266,7 +271,7 @@ fun CameraSelectionScreen(
                             if (cameraDeviceID2 != null) {
                                 Row {
                                     Text(
-                                        text = "✅ Concurrent Camera Support Available",
+                                        text = "✅ Dual Camera Available",
                                         color = Color(0xFF388E3C), // Green
                                         style = MaterialTheme.typography.labelMedium,
                                         modifier = Modifier
@@ -275,7 +280,7 @@ fun CameraSelectionScreen(
                                 }
                             }
 
-                            Row (
+                            Row(
                                 verticalAlignment = Alignment.Top,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -320,33 +325,57 @@ fun CameraSelectionScreen(
                             }
                         }
 
+
+
+
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(
                                     if (uiState.selectedCameraGroup == cameraGroup.toString())
                                         Color(0xFF4CAF50) // Green if selected
                                     else
-                                        Color.LightGray
+                                        Color.LightGray // Grey if not selected
                                 )
-                                .padding(4.dp)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
-                            if (uiState.selectedCameraGroup == cameraGroup.toString()) {
+
+
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.align(Alignment.Center)
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
-                                    contentDescription = "Selected",
-                                    tint = Color.White,
-                                    modifier = Modifier.align(Alignment.Center)
+                                    contentDescription = if (uiState.selectedCameraGroup == cameraGroup.toString()) "Selected" else "Not Selected",
+                                    tint = if (uiState.selectedCameraGroup == cameraGroup.toString()) Color.White else Color.DarkGray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Select",
+                                    color = if (uiState.selectedCameraGroup == cameraGroup.toString()) Color.White else Color.DarkGray,
+                                    fontSize = 12.sp
                                 )
                             }
+
+
+
                         }
-                        }
+
+
+
+
+
+
                     }
                 }
             }
         }
     }
+}
 
 
 

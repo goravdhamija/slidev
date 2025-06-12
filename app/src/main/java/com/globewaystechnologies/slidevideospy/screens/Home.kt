@@ -72,7 +72,7 @@ fun Home(
             containerColor = if (sharedServiceState) Color.Red else Color(0xFF4A148C)
         ) {
             Text(
-                text = if (sharedServiceState) "STOP BACKGROUND RECORDING" else "START BACKGROUND RECORDING",
+                text = if (sharedServiceState) "STOP RECORDING" else "START BACKGROUND RECORDING",
                 color = Color.White,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             )
