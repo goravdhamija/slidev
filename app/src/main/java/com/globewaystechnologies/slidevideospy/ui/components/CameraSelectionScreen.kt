@@ -1,36 +1,51 @@
 package com.globewaystechnologies.slidevideospy.ui.components
 
 // CameraSelectionScreen.kt (or wherever your Composable is)
+import CameraPreviewBox
+
+import DualCameraPreviewScreenWithParams
+import DualCameraPreviewView
+import android.app.Service.CAMERA_SERVICE
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.media.MediaRecorder
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel // Import for viewModel
-import com.globewaystechnologies.slidevideospy.viewmodel.CameraSelection
 import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
+
 
 // Assuming CameraSelection enum and CameraViewModel are defined as above
 
 @Composable
 fun CameraSelectionScreen(
-    cameraViewModel: CameraViewModel = viewModel(), // Get ViewModel instance
-    // Remove onSelectionChanged if all logic is handled by ViewModel interactions
-    // Or keep it if the parent composable needs to know the raw selection immediately for other reasons
-    onCameraIdsSelected: (List<String>) -> Unit // Callback with the actual camera IDs to use
+    cameraViewModel: CameraViewModel = viewModel(),
+    onCameraIdsSelected: (Set<Any>) -> Unit
 ) {
     val uiState by cameraViewModel.uiState.collectAsState()
+    var context = LocalContext.current
+    var cameraManager = context.getSystemService(CAMERA_SERVICE) as CameraManager
+    val showPreviews by cameraViewModel.showPreviews.collectAsState()
 
     Column(
         modifier = Modifier
             .padding(16.dp)
-            .fillMaxWidth(),
-        horizontalAlignment = Alignment.Start
+            .fillMaxWidth()
     ) {
-        Text("Select Camera:", style = MaterialTheme.typography.titleMedium)
+        Text("Available Cameras in your Phone:", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
 
         if (uiState.error != null) {
@@ -38,95 +53,176 @@ fun CameraSelectionScreen(
             Spacer(Modifier.height(8.dp))
         }
 
-        // Front Camera Option
-        if (uiState.frontCameraId != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(
-                    selected = uiState.selectedOption == CameraSelection.FRONT,
-                    onClick = {
-                        cameraViewModel.selectCamera(CameraSelection.FRONT)
-                        // Directly use the updated state or pass it via callback
-                        onCameraIdsSelected(listOfNotNull(uiState.frontCameraId))
-                    }
-                )
-                Text("Front Camera")
-            }
-        }
 
-        // Back Camera Option
-        if (uiState.backCameraId != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(
-                    selected = uiState.selectedOption == CameraSelection.BACK,
-                    onClick = {
-                        cameraViewModel.selectCamera(CameraSelection.BACK)
-                        onCameraIdsSelected(listOfNotNull(uiState.backCameraId))
-                    }
-                )
-                Text("Back Camera")
-            }
-        }
 
-        // Both Cameras (Concurrent) Option
-        if (uiState.canStreamConcurrently && uiState.frontCameraId != null && uiState.backCameraId != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(
-                    selected = uiState.selectedOption == CameraSelection.BOTH,
-                    onClick = {
-                        cameraViewModel.selectCamera(CameraSelection.BOTH)
-                        onCameraIdsSelected(
-                            listOfNotNull(
-                                uiState.frontCameraId,
-                                uiState.backCameraId
-                            )
+        val cornerRadius = 16.dp
+        val gradientBrush = Brush.linearGradient(
+            colors = listOf(Color.Cyan, Color.Blue)
+        )
+
+        for (cameraGroup in uiState.allCameraGroupsForSelection) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .background(brush = gradientBrush, shape = RoundedCornerShape(cornerRadius))
+                    .clip(RoundedCornerShape(cornerRadius))
+                    .clickable {
+                        cameraViewModel.selectedCameraGroupFun(cameraGroup)
+                        onCameraIdsSelected(cameraGroup)
+                    }
+                    .padding(1.dp) // Simulates border thickness
+            ) {
+
+
+                val parts = cameraGroup.toString().split(",").map { it.trim() }
+                val type = parts[0].removePrefix("[").removeSuffix("]").trim()     // "single"
+                val val1 = parts[1].removePrefix("[").removeSuffix("]").trim()     // "0"
+                val val2 = parts[2].removePrefix("[").removeSuffix("]").trim()     // "1"
+
+                var cameraDevice1 = cameraManager.cameraIdList.firstOrNull { it == val2 } ?: "Unknown Camera ID"
+                var cameraDevice2 = cameraManager.cameraIdList.firstOrNull { it == val2 } ?: "Unknown Camera ID"
+
+                var cameraDeviceID1 = 0
+                var cameraDeviceID2 = -1
+
+                if (type == "single") {
+                    cameraDeviceID1 = val2.toInt()
+
+                }
+                else if (type == "double") {
+
+                    val itemsx = val2.removePrefix("{").removeSuffix("}")
+                        .split(",")
+                        .map { it.trim() }
+                    cameraDeviceID1 = itemsx[0].toInt()
+
+                    val val3 = parts[3].removePrefix("[").removeSuffix("]").trim()
+                    val itemsy = val3.removePrefix("{").removeSuffix("}")
+                        .split(",")
+                        .map { it.trim() }
+                    cameraDeviceID2 = itemsy[0].toInt()
+
+
+                }
+
+                val characteristics1 = cameraManager.getCameraCharacteristics(cameraDeviceID1.toString())
+                val facing = when (characteristics1.get(CameraCharacteristics.LENS_FACING)) {
+                    CameraCharacteristics.LENS_FACING_FRONT -> "Front"
+                    CameraCharacteristics.LENS_FACING_BACK -> "Back"
+                    else -> "Unknown"
+                }
+                var orientation = characteristics1.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+                val map = characteristics1.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                val resolutions = map?.getOutputSizes(MediaRecorder::class.java)?.map { "${it.width}x${it.height}" } ?: emptyList()
+
+
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(cornerRadius - 1.dp))
+                        .background(Color.White)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+
+                        if (uiState.selectedCameraGroup == cameraGroup.toString() && showPreviews) {
+
+
+                            if (cameraDeviceID2 > -1) {
+//                                CameraPreviewBox(
+//                                    cameraId = "0",
+//                                    modifier = Modifier
+//                                        .width(70.dp)
+//                                        .height(100.dp)
+//                                        .padding(top = 8.dp),
+//                                    controller = cameraViewModel.backpreviewController,
+//                                    lifecycleOwner = cameraViewModel.backLifecycleOwner
+//                                )
+
+                                DualCameraPreviewScreenWithParams("0","1")
+
+                            } else {
+                                CameraPreviewBox(
+                                    cameraId = "1",
+                                    modifier = Modifier
+                                        .width(70.dp)
+                                        .height(100.dp)
+                                        .padding(top = 8.dp),
+                                    controller = cameraViewModel.previewController,
+                                    lifecycleOwner = cameraViewModel.frontLifecycleOwner
+                                )
+                            }
+
+
+
+                        }
+
+
+                        Text(
+                            text = "Camera ID: ${cameraDeviceID1}",
+                            style = MaterialTheme.typography.bodyLarge
                         )
+                        Text(
+                            text = "Facing: ${facing}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Orientation: ${orientation}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Resolutions: ${resolutions.joinToString()}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+//                        cameraGroup.characteristics.forEach { (key, value) ->
+//                            Text(
+//                                text = "$key: $value",
+//                                style = MaterialTheme.typography.bodySmall
+//                            )
+//                        }
                     }
-                )
-                Text("Both Front and Back Cameras")
+
+                    RadioButton(
+                        selected = (uiState.selectedCameraGroup == cameraGroup.toString()),
+                        onClick = null
+                    )
+                }
+
+
+
+
             }
         }
 
-        if (uiState.frontCameraId == null && uiState.backCameraId == null && uiState.error == null) {
-            Text("No cameras available on this device.")
-        } else if (uiState.selectedOption == CameraSelection.NONE && uiState.error == null) {
-            Text("Please select a camera option.")
-        }
 
-        // You can observe uiState.availableCameraIdsForSelection in the parent composable
-        // or trigger actions based on it here.
+
+
+
     }
 }
 
 // Example Usage in your main app composable
 @Composable
-fun MyCameraAppWithViewModel() {
-    val cameraViewModel: CameraViewModel = viewModel()
+fun MyCameraAppWithViewModel(cameraViewModel: CameraViewModel) {
+
     val cameraUiState by cameraViewModel.uiState.collectAsState()
 
-    Column {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+
+    ) {
         CameraSelectionScreen(
             cameraViewModel = cameraViewModel // Pass the ViewModel instance
         ) { selectedIds ->
-            // This callback is useful if the parent needs immediate access to the IDs
-            // However, most of the time you'd observe cameraUiState.availableCameraIdsForSelection
             println("Camera IDs selected in Composable: $selectedIds")
         }
 
-        // Observe the selected camera IDs from the ViewModel's state
-        if (cameraUiState.availableCameraIdsForSelection.isNotEmpty()) {
-            Text(
-                "ViewModel says: Selected ${cameraUiState.selectedOption} " +
-                        "with IDs: ${cameraUiState.availableCameraIdsForSelection.joinToString()}",
-                modifier = Modifier.padding(16.dp)
-            )
-            // Here you would typically navigate to a camera preview screen
-            // or start the camera capture process based on cameraUiState.availableCameraIdsForSelection
-            // and cameraUiState.selectedOption
-        } else if (cameraUiState.selectedOption != CameraSelection.NONE) {
-            Text(
-                "ViewModel says: Selected ${cameraUiState.selectedOption} but no valid camera IDs found (check logic).",
-                modifier = Modifier.padding(16.dp)
-            )
-        }
+
     }
 }

@@ -72,6 +72,7 @@ dependencies {
     implementation("androidx.camera:camera-extensions:${camerax_version}")
     implementation("com.android.billingclient:billing:7.0.0")
 
+
     val nav_version = "2.9.0"
     implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation("androidx.compose.material:material:1.8.2")
@@ -95,6 +96,9 @@ dependencies {
     implementation("androidx.datastore:datastore-rxjava2:1.1.7")
     implementation("androidx.datastore:datastore-rxjava3:1.1.7")
     implementation("androidx.datastore:datastore-core:1.1.7")
+
+    implementation("androidx.compose.material:material-icons-extended:1.6.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
 
 }

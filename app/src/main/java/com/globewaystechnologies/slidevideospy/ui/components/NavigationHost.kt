@@ -1,36 +1,46 @@
 package com.globewaystechnologies.slidevideospy.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.globewaystechnologies.slidevideospy.screens.Contacts
-import com.globewaystechnologies.slidevideospy.screens.Favorites
+import com.globewaystechnologies.slidevideospy.screens.Gallery
 import com.globewaystechnologies.slidevideospy.screens.Home
+import com.globewaystechnologies.slidevideospy.screens.Settings
+import com.globewaystechnologies.slidevideospy.viewmodel.CameraViewModel
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 
 sealed class NavRoutes(val route: String) {
     object Home : NavRoutes("home")
-    object Contacts : NavRoutes("contacts")
-    object Favorites : NavRoutes("favorites")
+    object Gallery : NavRoutes("gallery")
+    object Settings : NavRoutes("settings")
 }
 
 
 @Composable
-public fun NavigationHost(navController: NavHostController, sharedViewModel: SharedViewModel) {
+public fun NavigationHost(
+    navController: NavHostController,
+    sharedViewModel: SharedViewModel = viewModel(),
+    cameraViewModel: CameraViewModel
+) {
+    val sharedServiceState by sharedViewModel.isServiceRunning.collectAsState()
+
     NavHost(
         navController = navController,
         startDestination = NavRoutes.Home.route,
     ) {
         composable(NavRoutes.Home.route) {
-            Home(sharedViewModel)
+            Home(sharedViewModel,sharedViewModel,cameraViewModel)
         }
-        composable(NavRoutes.Contacts.route) {
-            Contacts(sharedViewModel)
+        composable(NavRoutes.Gallery.route) {
+            Gallery(sharedViewModel)
         }
-        composable(NavRoutes.Favorites.route) {
-            Favorites(sharedViewModel)
+        composable(NavRoutes.Settings.route) {
+            Settings(sharedViewModel)
         }
     }
 }

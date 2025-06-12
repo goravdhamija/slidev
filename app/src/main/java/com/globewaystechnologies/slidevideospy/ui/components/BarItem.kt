@@ -5,7 +5,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Settings
 data class BarItem(
     val title: String,
     val image: ImageVector,
@@ -22,14 +23,14 @@ object NavBarItems {
             route = "home"
         ),
         BarItem(
-            title = "Contacts",
-            image = Icons.Filled.Face,
-            route = "contacts"
+            title = "Gallery",
+            image = Icons.Filled.PhotoLibrary,
+            route = "gallery"
         ),
         BarItem(
-            title = "Favorites",
-            image = Icons.Filled.Favorite,
-            route = "favorites"
+            title = "Settings",
+            image = Icons.Filled.Settings,
+            route = "settings"
         )
     )
 }

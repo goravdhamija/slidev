@@ -10,11 +10,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.globewaystechnologies.slidevideospy.screens.MainScreen
 import com.globewaystechnologies.slidevideospy.services.*
 import com.globewaystechnologies.slidevideospy.ui.theme.SlideVideoSPYTheme
@@ -28,6 +31,8 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 class MainActivity : ComponentActivity() {
 
     private val sharedViewModel: SharedViewModel by viewModels()
+   // val sharedViewModel: SharedViewModel = viewModel()
+
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +43,7 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             SlideVideoSPYTheme {
+
                 MainScreen(modifier = Modifier,
                     sharedViewModel = sharedViewModel
                 )
@@ -68,14 +74,14 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true, name = "Greeting Preview")
 @Composable
 fun MainActivityPreview() {
-
-    val fakeViewModel = object : SharedViewModel() {
-        override val text = MutableStateFlow("Preview Text")
-    }
-
-    SlideVideoSPYTheme {
-        MainScreen(modifier = Modifier,fakeViewModel)
-    }
+//
+//    val fakeViewModel = object : SharedViewModel() {
+//        override val text = MutableStateFlow("Preview Text")
+//    }
+//
+//    SlideVideoSPYTheme {
+//        MainScreen(modifier = Modifier,fakeViewModel)
+//    }
 }
 
 
