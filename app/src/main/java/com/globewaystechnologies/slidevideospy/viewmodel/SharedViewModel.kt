@@ -6,6 +6,7 @@ import android.os.Environment
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import com.globewaystechnologies.slidevideospy.services.PinkService
@@ -21,8 +22,26 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
 
     private val sharedPreferences = application.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
+
+    // App Lock Pattern
+    fun getAppLockPattern(): List<Int>? {
+        val patternString = sharedPreferences.getString("app_lock_pattern", null)
+        return patternString?.split(",")?.mapNotNull { it.toIntOrNull() }
+    }
+
+    fun setAppLockPattern(pattern: List<Int>) {
+        sharedPreferences.edit().putString("app_lock_pattern", pattern.joinToString(",")).apply()
+    }
+    fun isAppLockEnabled(): Boolean {
+        return sharedPreferences.getBoolean("app_lock_enabled", false)
+    }
+
+    fun setAppLockEnabled(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean("app_lock_enabled", enabled).apply()
+    }
+
     // This line seems problematic as `sharedViewModel` is not defined here.
-    // It should likely be `this.getMediaRecorderAudioSource()` or similar,
+    // It should likely be `this.isAppLockEnabled()` or similar.
     // and `mediaRecorderAudioSources` needs to be defined.
     // For now, I'll assume a default value or you'll adjust it.
 

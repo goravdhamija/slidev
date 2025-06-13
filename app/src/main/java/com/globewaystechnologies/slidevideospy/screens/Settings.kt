@@ -7,6 +7,7 @@ import android.media.AudioDeviceInfo
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.provider.Settings as AndroidSettings
 import android.util.Size
 import androidx.compose.foundation.background
 import android.media.MediaRecorder
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.navigation.compose.rememberNavController
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 
 @Composable
@@ -46,9 +48,87 @@ fun Settings(sharedViewModel: SharedViewModel) {
         // Media Recorder Settings
         item { MediaRecorderSettings(sharedViewModel) }
 
+        item { Spacer(modifier = Modifier.height(24.dp)) }
+
+        // App Lock Settings
+        item { AppLockSettings(sharedViewModel = sharedViewModel, navController = rememberNavController()) }
 
     }
 }
+
+@Composable
+fun AppLockSettings(sharedViewModel: SharedViewModel, navController: androidx.navigation.NavController) {
+    var isAppLockEnabled by remember { mutableStateOf(sharedViewModel.isAppLockEnabled()) }
+    var showPatternSetupDialog by remember { mutableStateOf(false) }
+    var currentPattern by remember { mutableStateOf(sharedViewModel.getAppLockPattern() ?: emptyList()) }
+    // Add states for pattern or password if you implement those
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .background(Color.White)
+                .padding(16.dp)
+        ) {
+            Text("App Lock", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        isAppLockEnabled = !isAppLockEnabled
+                        sharedViewModel.setAppLockEnabled(isAppLockEnabled)
+                    },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Enable App Lock", modifier = Modifier.weight(1f))
+                Switch(checked = isAppLockEnabled, onCheckedChange = {
+                    isAppLockEnabled = it
+                    sharedViewModel.setAppLockEnabled(it)
+                })
+            }
+            if (isAppLockEnabled) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { showPatternSetupDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (currentPattern.isEmpty()) "Set Pattern" else "Change Pattern")
+                }
+            }
+        }
+    }
+
+    if (showPatternSetupDialog) {
+        PatternSetupDialog(
+            onDismiss = { showPatternSetupDialog = false },
+            onPatternSet = { pattern ->
+                sharedViewModel.setAppLockPattern(pattern)
+                currentPattern = pattern
+                showPatternSetupDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun PatternSetupDialog(onDismiss: () -> Unit, onPatternSet: (List<Int>) -> Unit) {
+    // This is a placeholder for your actual pattern setup UI.
+    // You would replace this with a composable that allows users to draw a pattern.
+    // For simplicity, we'll just have a button to simulate setting a pattern.
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Set Pattern") },
+        text = { Text("Implement your pattern drawing UI here.") },
+        confirmButton = { Button(onClick = { onPatternSet(listOf(1, 2, 3, 6, 9, 8, 7, 4)); onDismiss() }) { Text("Set Dummy Pattern") } },
+        dismissButton = { Button(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
 
 @Composable
 fun PermissionsSection(context: Context) {
@@ -96,7 +176,7 @@ fun PermissionsSection(context: Context) {
                     )
                     if (!isGranted) {
                         Button(onClick = {
-                            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            val intent = Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                 data = android.net.Uri.fromParts("package", context.packageName, null)
                             }
                             context.startActivity(intent)
