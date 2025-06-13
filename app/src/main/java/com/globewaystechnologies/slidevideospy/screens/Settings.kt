@@ -3,6 +3,7 @@ package com.globewaystechnologies.slidevideospy.screens
 import android.Manifest
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.media.AudioDeviceInfo
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,9 +12,8 @@ import androidx.compose.foundation.background
 import android.media.MediaRecorder
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyColumn // Keep this for the outer LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,22 +28,25 @@ import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 fun Settings(sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp) // Outer padding for the whole screen
     ) {
-        Text("App Settings", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
-
+        item {
+            Text("App Settings", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
+        }
         // Permissions Section
-        PermissionsSection(context)
+        item { PermissionsSection(context) }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        item { Spacer(modifier = Modifier.height(24.dp)) }
 
         // Audio Settings for Media Recorder
-        AudioSettings(sharedViewModel)
+        item { AudioSettings(sharedViewModel) }
         // Media Recorder Settings
-        MediaRecorderSettings(sharedViewModel)
+        item { MediaRecorderSettings(sharedViewModel) }
+
+
     }
 }
 
@@ -51,18 +54,6 @@ fun Settings(sharedViewModel: SharedViewModel) {
 fun PermissionsSection(context: Context) {
 
 
-//    val requiredPermissions = mapOf(
-//        Manifest.permission.POST_NOTIFICATIONS to "Post Notifications",
-//        Manifest.permission.FOREGROUND_SERVICE_CAMERA to "Foreground Camera Access",
-//        Manifest.permission.CAMERA to "Camera Access",
-//        Manifest.permission.FOREGROUND_SERVICE_MICROPHONE to "Foreground Microphone Access",
-//        Manifest.permission.RECORD_AUDIO to "Record Audio",
-//        Manifest.permission.FOREGROUND_SERVICE to "Foreground Service",
-//        Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION to "Media Projection",
-//        Manifest.permission.ACCESS_FINE_LOCATION to "Location Access",
-//        Manifest.permission.READ_EXTERNAL_STORAGE to "Read External Storage",
-//        Manifest.permission.WRITE_EXTERNAL_STORAGE to "Write External Storage"
-//    )
 
     val requiredPermissions = mapOf(
         Manifest.permission.POST_NOTIFICATIONS to "Post Notifications",
@@ -80,14 +71,15 @@ fun PermissionsSection(context: Context) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
 
     ) {
-        LazyColumn(
-            modifier = Modifier.background(Color.White).padding(8.dp) // Ensuring LazyColumn also has a white background
+        // Changed from LazyColumn to Column as it's inside another LazyColumn item
+        Column(
+            modifier = Modifier
+                .background(Color.White)
+                .padding(8.dp) // Ensuring Column also has a white background
         ) {
-            item {
-                Text("Permissions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
-            }
+            Text("Permissions", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
 
-            items(requiredPermissions.toList()) { (permissionKey, permissionValue) ->
+            requiredPermissions.forEach { (permissionKey, permissionValue) ->
                 val isGranted = ContextCompat.checkSelfPermission(context, permissionKey) == PackageManager.PERMISSION_GRANTED
 
                 Row(
@@ -120,9 +112,56 @@ fun PermissionsSection(context: Context) {
 
 @Composable
 fun AudioSettings(sharedViewModel: SharedViewModel) {
+    val context = LocalContext.current
     var isAudioEnabled by remember { mutableStateOf(sharedViewModel.isAudioEnabled.value ?: false) }
+    val audioBitrates = listOf("64 kbps", "96 kbps", "128 kbps", "192 kbps", "256 kbps", "320 kbps")
+    var selectedAudioBitrate by remember { mutableStateOf(sharedViewModel.getAudioBitrate() ?: audioBitrates.first()) }
+    var expandedAudioBitrate by remember { mutableStateOf(false) }
+
+    val mediaRecorderAudioSources = remember {
+        listOf(
+            Pair(MediaRecorder.AudioSource.DEFAULT, "Default"),
+            Pair(MediaRecorder.AudioSource.MIC, "Microphone"),
+            Pair(MediaRecorder.AudioSource.VOICE_UPLINK, "Voice Uplink"),
+            Pair(MediaRecorder.AudioSource.VOICE_DOWNLINK, "Voice Downlink"),
+            Pair(MediaRecorder.AudioSource.VOICE_CALL, "Voice Call"),
+            Pair(MediaRecorder.AudioSource.CAMCORDER, "Camcorder"),
+            Pair(MediaRecorder.AudioSource.VOICE_RECOGNITION, "Voice Recognition"),
+            Pair(MediaRecorder.AudioSource.VOICE_COMMUNICATION, "Voice Communication"),
+            Pair(MediaRecorder.AudioSource.REMOTE_SUBMIX, "Remote Submix"),
+            Pair(MediaRecorder.AudioSource.UNPROCESSED, "Unprocessed"),
+            Pair(MediaRecorder.AudioSource.VOICE_PERFORMANCE, "Voice Performance")
+        )
+    }
+
+
+    var selectedMediaRecorderAudioSource by remember {
+        mutableStateOf(sharedViewModel.getMediaRecorderAudioSource() ?: mediaRecorderAudioSources.first())
+    }
+    var expandedMediaRecorderAudioSource by remember { mutableStateOf(false) }
+
+    val audioSources = remember { getAvailableAudioSources(context) }
+    var selectedAudioSource by remember {
+        mutableStateOf(
+            sharedViewModel.getAudioSource()?.let { id ->
+                audioSources.find { it.id.toString() == id }
+            } ?: audioSources.firstOrNull()
+        )
+    }
+    var expandedAudioSource by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        fun getAudioSourceDisplayName(source: AudioDeviceInfo): String {
+            val typeName = when (source.type) {
+                AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Mic"
+                AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired Headset"
+                AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
+                AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth A2DP"
+                // Add more types as needed
+                else -> "Unknown Source"
+            }
+            return "${source.productName} ($typeName)"
+        }
         Text(
             "Audio Settings",
             style = MaterialTheme.typography.titleMedium,
@@ -144,6 +183,107 @@ fun AudioSettings(sharedViewModel: SharedViewModel) {
                 isAudioEnabled = it
                 sharedViewModel.setAudioEnabled(it)
             })
+        }
+
+        if (isAudioEnabled) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // MediaRecorder Audio Source Dropdown
+            Text(
+                "MediaRecorder Audio Source",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                OutlinedButton(
+                    onClick = { expandedMediaRecorderAudioSource = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(selectedMediaRecorderAudioSource?.second ?: "Unknown")
+                }// Handle null or uninitialized cases                }
+                DropdownMenu(
+                    expanded = expandedMediaRecorderAudioSource,
+                    onDismissRequest = { expandedMediaRecorderAudioSource = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    mediaRecorderAudioSources.forEach { sourcePair ->
+                        DropdownMenuItem(
+                            text = { Text(sourcePair.second) },
+                            onClick = {
+                                selectedMediaRecorderAudioSource = sourcePair
+                                sharedViewModel.setMediaRecorderAudioSource(sourcePair) // You'll need to add this method to SharedViewModel
+                                expandedMediaRecorderAudioSource = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "Audio Source",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                OutlinedButton(
+                    onClick = { expandedAudioSource = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    enabled = audioSources.isNotEmpty()
+                ) {
+                    Text(selectedAudioSource?.let { getAudioSourceDisplayName(it) } ?: "No audio sources available")
+                }
+                DropdownMenu(
+                    expanded = expandedAudioSource && audioSources.isNotEmpty(),
+                    onDismissRequest = { expandedAudioSource = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    audioSources.forEach { source -> // Use the descriptive name for the dropdown item
+                        DropdownMenuItem(
+                            text = { Text(source.productName.toString()) },
+                            onClick = {
+                                selectedAudioSource = source
+                                sharedViewModel.setAudioSource(source.id.toString()) // You'll need to add this method to SharedViewModel
+                                expandedAudioSource = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "Audio Quality (Bitrate)",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                OutlinedButton(
+                    onClick = { expandedAudioBitrate = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Bitrate: $selectedAudioBitrate")
+                }
+                DropdownMenu(
+                    expanded = expandedAudioBitrate,
+                    onDismissRequest = { expandedAudioBitrate = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    audioBitrates.forEach { bitrate ->
+                        DropdownMenuItem(
+                            text = { Text(bitrate) },
+                            onClick = {
+                                selectedAudioBitrate = bitrate
+                                sharedViewModel.setAudioBitrate(bitrate) // You'll need to add this method to SharedViewModel
+                                expandedAudioBitrate = false
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -285,6 +425,24 @@ private fun getAvailableVideoQualities(context: Context): List<Size> {
         .sortedWith(compareByDescending<Size> { it.width * it.height }.thenByDescending { it.width })
 }
 
+private fun getAvailableAudioSources(context: Context): List<AudioDeviceInfo> {
+    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+    val devices = audioManager.getDevices(android.media.AudioManager.GET_DEVICES_INPUTS)
+    return devices.filter {
+        it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC ||
+                it.type == AudioDeviceInfo.TYPE_FM_TUNER ||
+                it.type == AudioDeviceInfo.TYPE_HDMI ||
+                it.type == AudioDeviceInfo.TYPE_IP ||
+                it.type == AudioDeviceInfo.TYPE_LINE_ANALOG ||
+                it.type == AudioDeviceInfo.TYPE_LINE_DIGITAL ||
+                it.type == AudioDeviceInfo.TYPE_TELEPHONY ||
+                it.type == AudioDeviceInfo.TYPE_USB_ACCESSORY ||
+                it.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
+                it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET
+    }.distinctBy { it.id }
+}
 
 
 
