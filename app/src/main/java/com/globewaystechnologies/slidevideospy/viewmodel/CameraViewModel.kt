@@ -52,9 +52,6 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val _showPreviews = MutableStateFlow(true)
     val showPreviews: StateFlow<Boolean> = _showPreviews
 
-
-
-
     private var dualService: DualPreviewServiceWithIds? = null
     private var isServiceActive = false
 

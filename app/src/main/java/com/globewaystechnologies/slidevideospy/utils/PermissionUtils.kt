@@ -23,7 +23,9 @@ object PermissionUtils {
         Manifest.permission.RECORD_AUDIO,
         Manifest.permission.FOREGROUND_SERVICE,
         Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION,
-        Manifest.permission.ACCESS_FINE_LOCATION
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
     )
 
     fun requestAllPermissions(activity: Activity) {
