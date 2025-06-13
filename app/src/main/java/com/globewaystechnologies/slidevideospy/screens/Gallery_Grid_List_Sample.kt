@@ -18,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -31,25 +30,19 @@ import java.util.*
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
-import kotlinx.coroutines.Dispatchers
-
 
 @Composable
-fun Gallery(sharedViewModel: SharedViewModel) {
+fun Gallery_Grid_List_Sample(sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
-    val publicDir = sharedViewModel.publicDir
-    val videoFiles = sharedViewModel.videoFiles
-    var isGrid by sharedViewModel::isGrid
+    val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), "MediaSync")
+    val videoFiles = remember { mutableStateListOf<File>() }
+    var isGrid by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.withContext(Dispatchers.IO) {
-            if (publicDir.exists()) {
-                val files = publicDir.listFiles()?.filter { it.extension == "mp4" }?.sortedByDescending { it.lastModified() } ?: emptyList()
-                kotlinx.coroutines.withContext(Dispatchers.Main) {
-                    videoFiles.clear()
-                    videoFiles.addAll(files)
-                }
-            }        }
+        if (publicDir.exists()) {
+            videoFiles.clear()
+            videoFiles.addAll(publicDir.listFiles()?.filter { it.extension == "mp4" }?.sortedByDescending { it.lastModified() } ?: emptyList())
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
@@ -70,7 +63,7 @@ fun Gallery(sharedViewModel: SharedViewModel) {
             if (isGrid) {
                 LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize()) {
                     items(videoFiles) { file ->
-                        VideoCard(file = file, context = context, isGrid = true) {
+                        VideoCard_Grid_List_Sample(file = file, context = context, isGrid = true) {
                             file.delete()
                             videoFiles.remove(file)
                         }
@@ -79,7 +72,7 @@ fun Gallery(sharedViewModel: SharedViewModel) {
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(videoFiles) { file ->
-                        VideoCard(file = file, context = context, isGrid = false) {
+                        VideoCard_Grid_List_Sample(file = file, context = context, isGrid = false) {
                             file.delete()
                             videoFiles.remove(file)
                         }
@@ -91,53 +84,20 @@ fun Gallery(sharedViewModel: SharedViewModel) {
 }
 
 @Composable
-fun VideoCard(file: File, context: android.content.Context, isGrid: Boolean, onDelete: () -> Unit) {
+fun VideoCard_Grid_List_Sample(file: File, context: android.content.Context, isGrid: Boolean, onDelete: () -> Unit) {
     val dateFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-    val fileSize = formatFileSize(file.length())
+    val fileSize = formatFileSize_Grid_List_Sample(file.length())
     val thumbnail by produceState<ImageBitmap?>(initialValue = null, file) {
-        kotlinx.coroutines.withContext(Dispatchers.IO) {
-            val retriever = MediaMetadataRetriever()
-            try {
-                retriever.setDataSource(file.absolutePath)
-                val bitmap = retriever.frameAtTime
-                value = bitmap?.asImageBitmap()
-            } catch (e: Exception) {
-                value = null
-            } finally {
-                retriever.release()
-            }
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(file.absolutePath)
+            val bitmap = retriever.frameAtTime
+            value = bitmap?.asImageBitmap()
+        } catch (e: Exception) {
+            value = null
+        } finally {
+            retriever.release()
         }
-    }
-
-    var showDialog by remember { mutableStateOf(false) }
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Confirm Delete") },
-            text = { Text("Are you sure you want to delete this video?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                    onDelete()
-                }) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    fun playVideo() {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(FileProvider.getUriForFile(context, context.packageName + ".provider", file), "video/*")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(intent)
     }
 
     Card(
@@ -149,29 +109,12 @@ fun VideoCard(file: File, context: android.content.Context, isGrid: Boolean, onD
         if (isGrid) {
             Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 thumbnail?.let {
-                    Image(
-                        bitmap = it,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clickable { playVideo() }
-                    )
+                    Image(bitmap = it, contentDescription = null, modifier = Modifier.size(150.dp))
                 }
-                Text(
-                    text = file.name,
-                    maxLines = 1,
-                    modifier = Modifier.clickable { playVideo() }
-                )
-                Text(
-                    text = "Date: ${dateFormat.format(Date(file.lastModified()))}",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.clickable { playVideo() }
-                )
-                Text(
-                    text = "Size: $fileSize",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.clickable { playVideo() }
-                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = file.name, maxLines = 1)
+                Text(text = "Date: ${dateFormat.format(Date(file.lastModified()))}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Size: $fileSize", style = MaterialTheme.typography.bodySmall)
                 Row {
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -193,40 +136,22 @@ fun VideoCard(file: File, context: android.content.Context, isGrid: Boolean, onD
                     }) {
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
-                    IconButton(onClick = { showDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
+                    IconButton(onClick = { onDelete() }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 }
             }
         } else {
             Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 thumbnail?.let {
-                    Image(
-                        bitmap = it,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clickable { playVideo() }
-                    )
+                    Image(bitmap = it, contentDescription = null, modifier = Modifier.size(100.dp))
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = file.name,
-                        maxLines = 1,
-                        modifier = Modifier.clickable { playVideo() }
-                    )
-                    Text(
-                        text = "Date: ${dateFormat.format(Date(file.lastModified()))}",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.clickable { playVideo() }
-                    )
-                    Text(
-                        text = "Size: $fileSize",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.clickable { playVideo() }
-                    )
+                    Text(text = file.name, maxLines = 1)
+                    Text(text = "Date: ${dateFormat.format(Date(file.lastModified()))}", style = MaterialTheme.typography.bodySmall)
+                    Text(text = "Size: $fileSize", style = MaterialTheme.typography.bodySmall)
                 }
-
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -248,8 +173,8 @@ fun VideoCard(file: File, context: android.content.Context, isGrid: Boolean, onD
                     }) {
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
-                    IconButton(onClick = { showDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
+                    IconButton(onClick = { onDelete() }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 }
             }
@@ -257,7 +182,7 @@ fun VideoCard(file: File, context: android.content.Context, isGrid: Boolean, onD
     }
 }
 
-fun formatFileSize(bytes: Long): String {
+fun formatFileSize_Grid_List_Sample(bytes: Long): String {
     val df = DecimalFormat("#.##")
     val kb = bytes / 1024.0
     val mb = kb / 1024.0
