@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import com.globewaystechnologies.slidevideospy.data.SettingsRepository
+import com.globewaystechnologies.slidevideospy.dataStore
 import com.globewaystechnologies.slidevideospy.services.PinkService
 import com.globewaystechnologies.slidevideospy.utils.isMyServiceRunning
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,12 +20,40 @@ import kotlinx.coroutines.flow.update
 import java.io.File
 
 
+const val PREFERENCES_NAME = "omni_preferences"
+
 class SharedViewModel(application: Application) : AndroidViewModel(application){
 
     private val sharedPreferences = application.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    val settingsRepository = SettingsRepository(getApplication<Application>().dataStore)
 
     private val _isPaidUser = MutableStateFlow(sharedPreferences.getBoolean("is_paid_user", false))
     val isPaidUser: StateFlow<Boolean> = _isPaidUser.asStateFlow()
+
+    private val _text = MutableStateFlow("Initial Text")
+    open val text: StateFlow<String> = _text
+
+    private val _isServiceRunning = MutableStateFlow(isMyServiceRunning(application, PinkService::class.java))
+    val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
+
+    val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), "MediaSync")
+    val videoFiles = mutableStateListOf<File>()
+    var isGrid by mutableStateOf(false)
+
+    private val _isAudioEnabled = MutableStateFlow(isAudioEnabledInternal())
+    val isAudioEnabled: StateFlow<Boolean> = _isAudioEnabled.asStateFlow()
+
+    private val _videoZoom = MutableStateFlow(getVideoZoomInternal())
+    val videoZoom: StateFlow<Float> = _videoZoom.asStateFlow()
+
+    private val _resolution = MutableStateFlow(getResolution())
+    val resolution: StateFlow<String> = _resolution.asStateFlow()
+
+    private val _bitrate = MutableStateFlow(getBitrate())
+    val bitrate: StateFlow<String> = _bitrate.asStateFlow()
+
+    var selectedStorageLocation by mutableStateOf(getStorageLocation())
+    var selectedMediaRecorderAudioSource by mutableStateOf(getMediaRecorderAudioSource() ?: "Default")
 
     // Function to set the video slot duration
     fun setVideoSlotDurationMillis(durationMillis: Long) {
@@ -43,14 +73,14 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
             null
         }
     }
-    // val isPaidUser = sharedViewModel.isPaidUser.collectAsState().value
+
 
     fun getVideoStoragePath(context: Context): String {
         val location = getStorageLocation()
         // Implement logic to return the actual path based on "Internal" or "External" (SD Card)
         return if (location == "Internal") context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)?.absolutePath ?: "" else "Path for SD Card" // Placeholder
     }
-    var selectedStorageLocation by mutableStateOf(getStorageLocation())
+
 
     // Storage Location
     fun getStorageLocation(): String {
@@ -90,7 +120,6 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
     // Initialize with the stored value or a default. The display name part (Int) is not stored directly.
     // You might need a way to map the stored string value back to the Pair<Int, String> if the Int part is crucial for display.
     // For simplicity, I'm assuming the String part is sufficient for now.
-    var selectedMediaRecorderAudioSource by mutableStateOf(getMediaRecorderAudioSource() ?: "Default")
     fun getMediaRecorderAudioSource(): Pair<Int, String>? {
         val value = sharedPreferences.getString("media_recorder_audio_source_value", null)
         return value?.let { Pair(0, it) } // Replace `0` with the appropriate default Int value
@@ -120,34 +149,15 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
     // It should likely be `this.getAudioBitrate()` or similar.
     // var selectedAudioBitrate by remember { mutableStateOf(getAudioBitrate() ?: audioBitrates.first()) }
 
-    private val _text = MutableStateFlow("Initial Text")
-    open val text: StateFlow<String> = _text
-
-    private val _isServiceRunning = MutableStateFlow(isMyServiceRunning(application, PinkService::class.java))
-    val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
-
     fun updateText(newValue: String) {
         _text.value = newValue
     }
 
     fun updateServiceRunning(value: Boolean) {
-
         _isServiceRunning.update {
             value
         }
     }
-
-    val publicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), "MediaSync")
-    val videoFiles = mutableStateListOf<File>()
-    var isGrid by mutableStateOf(false)
-
-    // Resolution and Bitrate logic
-
-    private val _isAudioEnabled = MutableStateFlow(isAudioEnabledInternal())
-    val isAudioEnabled: StateFlow<Boolean> = _isAudioEnabled.asStateFlow()
-
-    private val _videoZoom = MutableStateFlow(getVideoZoomInternal())
-    val videoZoom: StateFlow<Float> = _videoZoom.asStateFlow()
 
     private fun getVideoZoomInternal(): Float {
         return sharedPreferences.getFloat("video_zoom", 1.0f)
@@ -168,11 +178,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
         sharedPreferences.edit().putBoolean("audio_enabled", enabled).apply()
         _isAudioEnabled.value = enabled
     }
-    private val _resolution = MutableStateFlow(getResolution())
-    val resolution: StateFlow<String> = _resolution.asStateFlow()
 
-    private val _bitrate = MutableStateFlow(getBitrate())
-    val bitrate: StateFlow<String> = _bitrate.asStateFlow()
 
     fun getResolution(): String {
         return sharedPreferences.getString("resolution", "720p") ?: "720p"

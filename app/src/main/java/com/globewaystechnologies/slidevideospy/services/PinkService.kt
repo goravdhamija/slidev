@@ -47,6 +47,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import com.globewaystechnologies.slidevideospy.R
+import com.globewaystechnologies.slidevideospy.data.PreferenceKeys
 import com.globewaystechnologies.slidevideospy.data.SettingsRepository
 import com.globewaystechnologies.slidevideospy.dataStore
 import kotlinx.coroutines.CoroutineScope
@@ -143,7 +144,7 @@ class PinkService : Service() {
 
 
         CoroutineScope(Dispatchers.IO).launch {
-            settingsRepository.readSelectedCameraGroup().collect { savedGroup ->
+            settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_CAMERA_GROUP).collect { savedGroup ->
                 if (savedGroup.isNotEmpty()) {
                     val parts = savedGroup.split(",").map { it.trim() }
                     val type = parts[0]     // "single"

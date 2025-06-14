@@ -27,14 +27,13 @@ public fun NavigationHost(
     sharedViewModel: SharedViewModel = viewModel(),
     cameraViewModel: CameraViewModel
 ) {
-    val sharedServiceState by sharedViewModel.isServiceRunning.collectAsState()
 
     NavHost(
         navController = navController,
         startDestination = NavRoutes.Home.route,
     ) {
         composable(NavRoutes.Home.route) {
-            Home(sharedViewModel,sharedViewModel,cameraViewModel)
+            Home(sharedViewModel,cameraViewModel)
         }
         composable(NavRoutes.Gallery.route) {
             Gallery(sharedViewModel)

@@ -29,7 +29,6 @@ import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 @Composable
 fun Home(
     sharedViewModel: SharedViewModel,
-    sharedViewModel1: SharedViewModel = viewModel(),
     cameraViewModel: CameraViewModel
 ) {
     val scrollStateW = rememberScrollState()

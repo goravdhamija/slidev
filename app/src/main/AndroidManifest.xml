@@ -54,23 +54,6 @@
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
-        <service
-            android:name=".services.SecondCameraService"
-            android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
-        <service
-            android:name=".services.ThirdCameraService"
-            android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
-        <service
-            android:name=".services.FourthCameraServices"
-            android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="mediaProjection|mediaPlayback|camera|microphone|location|dataSync|mediaProcessing" />
-
-
 
         <activity
             android:name=".MainActivity"

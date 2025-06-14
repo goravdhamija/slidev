@@ -10,9 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 
 object PreferenceKeys {
     val SELECTED_CAMERA_GROUP = stringPreferencesKey("selected_camera_group")
-    val SELECTED_CAMERA_GROUP_INDEX = stringPreferencesKey("selected_camera_group_index")
 }
-
 
 class SettingsRepository(private val dataStore: DataStore<Preferences>) {
 
@@ -28,30 +26,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         }
     }
 
-    suspend fun saveSelectedCameraGroup(value: String) {
-        dataStore.edit { settings ->
-            settings[PreferenceKeys.SELECTED_CAMERA_GROUP] = value
-        }
-    }
-
-    fun readSelectedCameraGroup(): Flow<String> {
-        return dataStore.data.map { preferences ->
-            preferences[PreferenceKeys.SELECTED_CAMERA_GROUP] ?: ""
-        }
-    }
-
-
-    suspend fun saveSelectedCameraGroupIndex(value: String) {
-        dataStore.edit { settings ->
-            settings[PreferenceKeys.SELECTED_CAMERA_GROUP_INDEX] = value
-        }
-    }
-
-    fun readSelectedCameraGroupIndex(): Flow<String> {
-        return dataStore.data.map { preferences ->
-            preferences[PreferenceKeys.SELECTED_CAMERA_GROUP_INDEX] ?: ""
-        }
-    }
 
 }
 

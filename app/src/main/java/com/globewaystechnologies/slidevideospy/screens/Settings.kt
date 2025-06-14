@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun Settings(sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
-
+var cardSpace = 10.dp
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -59,7 +59,7 @@ fun Settings(sharedViewModel: SharedViewModel) {
 
         // Permissions Section
         item { PermissionsSection(context) }
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
         // Audio Settings for Media Recorder
         item {
             SectionCard {
@@ -68,37 +68,37 @@ fun Settings(sharedViewModel: SharedViewModel) {
         }
 
         // Media Recorder Settings
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
         item { MediaRecorderSettings(sharedViewModel) }
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
         item { StorageInfoSection() }
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
 
 
         // Storage Location Settings
         item { StorageLocationSettings(sharedViewModel) }
 
 
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
 
         // Video Slot Settings
         item { VideoSlotSettings(sharedViewModel) }
 
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
 
         // App Lock Settings
         item { AppLockSettings(sharedViewModel = sharedViewModel, navController = rememberNavController()) }
 
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
 
         // Widget Preview Section
         item { WidgetPreviewSection(sharedViewModel) }
 
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
         // App Upgrade Section
         item { AppUpgradeSection(sharedViewModel) }
 
-        item { Spacer(modifier = Modifier.height(18.dp)) }
+        item { Spacer(modifier = Modifier.height(cardSpace)) }
 
     }
 }

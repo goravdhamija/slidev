@@ -25,14 +25,12 @@ import com.globewaystechnologies.slidevideospy.utils.PermissionUtils
 import com.globewaystechnologies.slidevideospy.viewmodel.SharedViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
+ // "settings" is the filename
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings") // "settings" is the filename
-
 
 class MainActivity : ComponentActivity() {
 
     private val sharedViewModel: SharedViewModel by viewModels()
-   // val sharedViewModel: SharedViewModel = viewModel()
-
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
