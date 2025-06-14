@@ -132,7 +132,6 @@ fun DualCameraPreviewScreenWithParams(
     val context = LocalContext.current
     var isSetup by remember { mutableStateOf(false) }
     var service: DualPreviewServiceWithIds? by remember { mutableStateOf(null) }
-
     val frontView = remember { SurfaceView(context) }
     val backView = remember { SurfaceView(context) }
 

@@ -3,21 +3,27 @@ package com.globewaystechnologies.slidevideospy.viewmodel
 import android.app.Application
 import android.content.Context
 import android.os.Environment
+import android.util.Size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.globewaystechnologies.slidevideospy.data.PreferenceKeys
 import com.globewaystechnologies.slidevideospy.data.SettingsRepository
 import com.globewaystechnologies.slidevideospy.dataStore
-import com.globewaystechnologies.slidevideospy.services.PinkService
+import com.globewaystechnologies.slidevideospy.screens.VideoQuality
+import com.globewaystechnologies.slidevideospy.utils.CameraUtils.getAvailableVideoQualities
 import com.globewaystechnologies.slidevideospy.utils.isMyServiceRunning
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.io.File
+import com.globewaystechnologies.slidevideospy.services.PinkService
 
 
 const val PREFERENCES_NAME = "omni_preferences"
@@ -33,6 +39,9 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
     private val _text = MutableStateFlow("Initial Text")
     open val text: StateFlow<String> = _text
 
+    private val _videoSlotDurationMillis = MutableStateFlow(0L) // default value
+    val videoSlotDurationMillis: StateFlow<Long> = _videoSlotDurationMillis
+
     private val _isServiceRunning = MutableStateFlow(isMyServiceRunning(application, PinkService::class.java))
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
 
@@ -40,7 +49,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
     val videoFiles = mutableStateListOf<File>()
     var isGrid by mutableStateOf(false)
 
-    private val _isAudioEnabled = MutableStateFlow(isAudioEnabledInternal())
+    private val _isAudioEnabled = MutableStateFlow(true)
     val isAudioEnabled: StateFlow<Boolean> = _isAudioEnabled.asStateFlow()
 
     private val _videoZoom = MutableStateFlow(getVideoZoomInternal())
@@ -53,25 +62,197 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
     val bitrate: StateFlow<String> = _bitrate.asStateFlow()
 
     var selectedStorageLocation by mutableStateOf(getStorageLocation())
-    var selectedMediaRecorderAudioSource by mutableStateOf(getMediaRecorderAudioSource() ?: "Default")
 
-    // Function to set the video slot duration
-    fun setVideoSlotDurationMillis(durationMillis: Long) {
-        sharedPreferences.edit().putLong("video_slot_duration_millis", durationMillis).apply()
-        // If you have a StateFlow or MutableState for this value that needs updating, do it here.
-        // For example, if 'selectedSlotDurationMillis' was a StateFlow or lived in the ViewModel:
-        // _selectedSlotDurationMillis.value = durationMillis
+    private val _selectedMediaRecorderAudioSource = MutableStateFlow("Default")
+    var selectedMediaRecorderAudioSource: StateFlow<String> = _selectedMediaRecorderAudioSource.asStateFlow()
+
+//    private val _audioSources = MutableStateFlow<AudioSource?>(null) // nullable initially
+//    val audioSources: StateFlow<AudioSource?> = _audioSources.asStateFlow()
+
+
+    private val _selectedAudioBitrate = MutableStateFlow("96kbps")
+    var selectedAudioBitrate: StateFlow<String> = _selectedAudioBitrate.asStateFlow()
+
+    private val _selectedVideoQuality = MutableStateFlow<VideoQuality?>(null)
+    val selectedVideoQuality: StateFlow<VideoQuality?> = _selectedVideoQuality.asStateFlow()
+
+    val availableVideoQualities: List<Size> = getAvailableVideoQualities(application)
+    val videoQualities: List<VideoQuality>
+
+    init {
+        videoQualities = run {
+            val predefinedQualities = listOf(
+                VideoQuality("SD 480p", "640x480", "sd"),
+                VideoQuality("SD 576p", "720x576", "sd"),
+                VideoQuality("HD 720p", "1280x720", "hd"),
+                VideoQuality("HD 1080p", "1920x1080", "hd"),
+                VideoQuality("QHD 1440p", "2560x1440", "qhd"),
+                VideoQuality("UHD 4K", "3840x2160", "uhd"),
+                VideoQuality("UHD 5K", "5120x2880", "uhd"),
+                VideoQuality("UHD 8K", "7680x4320", "uhd"),
+                VideoQuality("LD 360p", "640x360", "ld"),
+                VideoQuality("VLD 240p", "426x240", "vld")
+            )
+
+            predefinedQualities.filter { predefinedQuality ->
+                val resolutionParts = predefinedQuality.resolution.split("x")
+                if (resolutionParts.size == 2) {
+                    try {
+                        val width = resolutionParts[0].toInt()
+                        val height = resolutionParts[1].toInt()
+                        availableVideoQualities.any { availableSize ->
+                            availableSize.width == width && availableSize.height == height
+                        }
+                    } catch (e: NumberFormatException) {
+                        false // Invalid resolution format
+                    }
+                } else {
+                    false // Invalid resolution format
+                }
+            }.ifEmpty {
+                availableVideoQualities.minByOrNull { it.width * it.height }
+                    ?.let { listOf(VideoQuality("Lowest Available", "${it.width}x${it.height}", "custom")) }
+                    ?: listOf(VideoQuality("Default (No Cam)", "640x480", "sd"))
+            }
+
+
+        }
+
+
+
+        viewModelScope.launch {
+            settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_SLOT_DURATION_MILLIS)
+                .collect { value ->
+                    _videoSlotDurationMillis.value = value.toLongOrNull() ?: 0L
+                }
+        }
+        viewModelScope.launch {
+            settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_IS_AUDIO_ENABLED)
+                .collect { value ->
+                    _isAudioEnabled.value = value.toBooleanStrictOrNull() ?: true
+                }
+        }
+        viewModelScope.launch {
+            settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_MEDIA_RECORDER_AUDIO_SOURCE)
+                .collect { value ->
+                    _selectedMediaRecorderAudioSource.value = value.toString().ifEmpty { "Default" }
+                }
+        }
+        viewModelScope.launch {
+            settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_AUDIO_BITRATE)
+                .collect { value ->
+                    _selectedAudioBitrate.value = value.toString().ifEmpty { "96kbps" }
+                }
+
+        }
+
+
+
+        viewModelScope.launch {
+            settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_VIDEO_RESOLUTION)
+                .collect { value ->
+                    val quality = videoQualities.find { it.resolution == value } ?: videoQualities.firstOrNull()
+                    _selectedVideoQuality.value = quality
+                  //  _selectedVideoResolution.value = value.toString().ifEmpty { "720p" } // Kept for reference if string is needed
+                }
+
+        }
+
+
     }
 
-    // Function to get the video slot duration
-    fun getVideoSlotDurationMillis(): Long? {
-        // Return null if not found, so the caller can use a default.
-        // Use a default value like -1 or specific constant if you prefer to always return a Long.
-        return if (sharedPreferences.contains("video_slot_duration_millis")) {
-            sharedPreferences.getLong("video_slot_duration_millis", 0L) // 0L is a fallback, should ideally not be hit if contains is true.
-        } else {
-            null
-        }
+    // Function to set the video slot duration
+    suspend fun setVideoSlotDurationMillis(durationMillis: Long) {
+       // sharedPreferences.edit().putLong("video_slot_duration_millis", durationMillis).apply()
+        _videoSlotDurationMillis.value = durationMillis
+
+        settingsRepository.saveSomeSetting(
+            key = PreferenceKeys.SELECTED_SLOT_DURATION_MILLIS,
+            value = durationMillis.toString()
+        )
+
+
+    }
+    suspend fun getVideoSlotDurationMillis(): Long {
+        val flow = settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_SLOT_DURATION_MILLIS)
+        val value = flow.firstOrNull() ?: "0"
+        return value.toLongOrNull() ?: 0L
+    }
+
+
+    suspend fun setAudioEnabled(value: Boolean) {
+        _isAudioEnabled.value = value
+        settingsRepository.saveSomeSetting(
+            key = PreferenceKeys.SELECTED_IS_AUDIO_ENABLED,
+            value = value.toString()
+        )
+    }
+
+    suspend fun getAudioEnabled(): Boolean {
+        val flow = settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_IS_AUDIO_ENABLED)
+        val value = flow.firstOrNull() ?: true
+        return value.toString().toBooleanStrictOrNull() ?: true
+    }
+
+    suspend fun setSelectedMediaRecorderAudioSource(value: String) {
+        _selectedMediaRecorderAudioSource.value = value
+        settingsRepository.saveSomeSetting(
+            key = PreferenceKeys.SELECTED_MEDIA_RECORDER_AUDIO_SOURCE,
+            value = value.toString()
+        )
+    }
+
+    suspend fun getSelectedMediaRecorderAudioSource(): String {
+        val flow = settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_MEDIA_RECORDER_AUDIO_SOURCE)
+        val value = flow.firstOrNull() ?: "Default"
+        return value.toString() ?: "Default"
+    }
+
+
+//    suspend fun setAudioSources(value: String) {
+//        _audioSources.value = value
+//        settingsRepository.saveSomeSetting(
+//            key = PreferenceKeys.AUDIO_SOURCES,
+//            value = value.toString()
+//        )
+//    }
+
+    suspend fun getAudioSources(): String {
+        val flow = settingsRepository.readSomeSetting(PreferenceKeys.AUDIO_SOURCES)
+        val value = flow.firstOrNull() ?: "Default"
+        return value.toString() ?: "Default"
+    }
+
+
+    suspend fun setSelectedAudioBitrate(value: String) {
+        _selectedAudioBitrate.value = value
+        settingsRepository.saveSomeSetting(
+            key = PreferenceKeys.SELECTED_AUDIO_BITRATE,
+            value = value.toString()
+        )
+    }
+
+    suspend fun getSelectedAudioBitrate(): String {
+        val flow = settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_AUDIO_BITRATE)
+        val value = flow.firstOrNull() ?: "Default"
+        return value.toString() ?: "Default"
+    }
+
+
+    suspend fun setSelectedVideoQuality(videoQuality: String) {
+        val quality = videoQualities.find { it.resolution == videoQuality } ?: videoQualities.firstOrNull()
+        _selectedVideoQuality.value = quality
+
+        settingsRepository.saveSomeSetting(
+            key = PreferenceKeys.SELECTED_VIDEO_RESOLUTION,
+            value = videoQuality // Store the resolution string
+        )
+    }
+
+    suspend fun getSelectedVideoResolutionString(): String {
+        val flow = settingsRepository.readSomeSetting(PreferenceKeys.SELECTED_VIDEO_RESOLUTION)
+        val value = flow.firstOrNull() ?: "720p"
+        return value.toString()
     }
 
 
@@ -120,14 +301,15 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
     // Initialize with the stored value or a default. The display name part (Int) is not stored directly.
     // You might need a way to map the stored string value back to the Pair<Int, String> if the Int part is crucial for display.
     // For simplicity, I'm assuming the String part is sufficient for now.
-    fun getMediaRecorderAudioSource(): Pair<Int, String>? {
-        val value = sharedPreferences.getString("media_recorder_audio_source_value", null)
-        return value?.let { Pair(0, it) } // Replace `0` with the appropriate default Int value
-    }
-    fun setMediaRecorderAudioSource(sourcePair: Pair<Int, String>) {
-        sharedPreferences.edit().putString("media_recorder_audio_source_value", sourcePair.second).apply()
-        selectedMediaRecorderAudioSource = sourcePair.second // Update with the string value for consistency
-    }
+//    fun getMediaRecorderAudioSource(): Pair<Int, String>? {
+//        val value = sharedPreferences.getString("media_recorder_audio_source_value", null)
+//        return value?.let { Pair(0, it) } // Replace `0` with the appropriate default Int value
+//    }
+//    fun setMediaRecorderAudioSource(sourcePair: Pair<Int, String>) {
+//        sharedPreferences.edit().putString("media_recorder_audio_source_value", sourcePair.second).apply()
+//        selectedMediaRecorderAudioSource = sourcePair.second // Update with the string value for consistency
+//    }
+
     fun getAudioSource(): String? {
         return sharedPreferences.getString("audio_source", null)
     }
@@ -174,10 +356,7 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
     private fun isAudioEnabledInternal(): Boolean {
         return sharedPreferences.getBoolean("audio_enabled", true)
     }
-    fun setAudioEnabled(enabled: Boolean) {
-        sharedPreferences.edit().putBoolean("audio_enabled", enabled).apply()
-        _isAudioEnabled.value = enabled
-    }
+
 
 
     fun getResolution(): String {

@@ -10,6 +10,13 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 
 object PreferenceKeys {
     val SELECTED_CAMERA_GROUP = stringPreferencesKey("selected_camera_group")
+    val SELECTED_SLOT_DURATION_MILLIS = stringPreferencesKey("selectedSlotDurationMillis")
+    val SELECTED_IS_AUDIO_ENABLED = stringPreferencesKey("isAudioEnabled")
+    val SELECTED_MEDIA_RECORDER_AUDIO_SOURCE = stringPreferencesKey("selectedMediaRecorderAudioSource")
+    val AUDIO_SOURCES = stringPreferencesKey("audioSources")
+    val SELECTED_AUDIO_BITRATE = stringPreferencesKey("selectedAudioBitrate")
+    val SELECTED_VIDEO_RESOLUTION = stringPreferencesKey("selectedVideoResolution")
+
 }
 
 class SettingsRepository(private val dataStore: DataStore<Preferences>) {
