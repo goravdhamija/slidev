@@ -22,6 +22,45 @@ class SharedViewModel(application: Application) : AndroidViewModel(application){
 
     private val sharedPreferences = application.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
+    private val _isPaidUser = MutableStateFlow(sharedPreferences.getBoolean("is_paid_user", false))
+    val isPaidUser: StateFlow<Boolean> = _isPaidUser.asStateFlow()
+
+    // Function to set the video slot duration
+    fun setVideoSlotDurationMillis(durationMillis: Long) {
+        sharedPreferences.edit().putLong("video_slot_duration_millis", durationMillis).apply()
+        // If you have a StateFlow or MutableState for this value that needs updating, do it here.
+        // For example, if 'selectedSlotDurationMillis' was a StateFlow or lived in the ViewModel:
+        // _selectedSlotDurationMillis.value = durationMillis
+    }
+
+    // Function to get the video slot duration
+    fun getVideoSlotDurationMillis(): Long? {
+        // Return null if not found, so the caller can use a default.
+        // Use a default value like -1 or specific constant if you prefer to always return a Long.
+        return if (sharedPreferences.contains("video_slot_duration_millis")) {
+            sharedPreferences.getLong("video_slot_duration_millis", 0L) // 0L is a fallback, should ideally not be hit if contains is true.
+        } else {
+            null
+        }
+    }
+    // val isPaidUser = sharedViewModel.isPaidUser.collectAsState().value
+
+    fun getVideoStoragePath(context: Context): String {
+        val location = getStorageLocation()
+        // Implement logic to return the actual path based on "Internal" or "External" (SD Card)
+        return if (location == "Internal") context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)?.absolutePath ?: "" else "Path for SD Card" // Placeholder
+    }
+    var selectedStorageLocation by mutableStateOf(getStorageLocation())
+
+    // Storage Location
+    fun getStorageLocation(): String {
+        // Assuming "Internal" is the default or first option. Adjust as necessary.
+        return sharedPreferences.getString("storage_location", "Internal") ?: "Internal"
+    }
+
+    fun setStorageLocation(location: String) {
+        sharedPreferences.edit().putString("storage_location", location).apply()
+    }
 
     // App Lock Pattern
     fun getAppLockPattern(): List<Int>? {
